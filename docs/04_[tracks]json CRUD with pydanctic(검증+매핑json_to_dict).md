@@ -204,3 +204,27 @@
     ```
     - docs에서 1번 데이터를 삭제해서 확인한다. 같은 것을 2번 삭제 요청해서 404의 Track not found도 확인하자.
 
+
+5. **단일조회에서 `첫번째 1개만 찾는 순회`를 `flag + for + break` 대신 `next(,None)`으로 바꿔보자.**
+    - get / update
+       ```python
+       # track = None
+       # for t in tracks_data:
+       #     if t['id'] == track_id:
+       #         track = t
+       #         break
+       track = next(
+           (t for t in tracks_data if t['id'] == track_id), None
+       )
+        ```
+   - delete
+        ```python
+        # track_index = None
+        # for idx, t in enumerate(tracks_data):
+        #     if t['id'] == track_id:
+        #         track_index = idx
+        #         break
+        track_index = next(
+            (idx for idx, t in enumerate(tracks_data) if t['id'] == track_id), None
+        )
+        ```

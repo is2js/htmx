@@ -112,11 +112,14 @@ def tracks():
 
 @app.get("/tracks/{track_id}", response_model=Union[Track, str])
 def track(track_id: int, response: Response):
-    track = None
-    for t in tracks_data:
-        if t['id'] == track_id:
-            track = t
-            break
+    # track = None
+    # for t in tracks_data:
+    #     if t['id'] == track_id:
+    #         track = t
+    #         break
+    track = next(
+        (t for t in tracks_data if t['id'] == track_id), None
+    )
 
     if track is None:
         response.status_code = 404
@@ -147,6 +150,9 @@ def track(track_id: int, updated_track: Track, response: Response):
         if t['id'] == track_id:
             track = t
             break
+    track = next(
+        (t for t in tracks_data if t['id'] == track_id), None
+    )
 
     if track is None:
         response.status_code = 404
@@ -171,11 +177,14 @@ def track(track_id: int, updated_track: Track, response: Response):
 @app.delete("/tracks/{track_id}")
 def track(track_id: int, response: Response):
     # 단일 <index> 조회 로직 시작
-    track_index = None
-    for idx, t in enumerate(tracks_data):
-        if t['id'] == track_id:
-            track_index = idx
-            break
+    # track_index = None
+    # for idx, t in enumerate(tracks_data):
+    #     if t['id'] == track_id:
+    #         track_index = idx
+    #         break
+    track_index = next(
+        (idx for idx, t in enumerate(tracks_data) if t['id'] == track_id), None
+    )
 
     if track_index is None:
         response.status_code = 404
