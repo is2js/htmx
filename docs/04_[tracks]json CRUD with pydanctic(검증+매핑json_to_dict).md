@@ -1,4 +1,5 @@
 - 참고유튜브: https://www.youtube.com/watch?v=gV-EpY2TeQ0&list=PL-2EBeDYMIbSppj2GYHnvpZ9W69qmkInS&index=3
+- json -> database로 변경시 : https://www.youtube.com/watch?v=Jl39FZs-uz8&list=PL-2EBeDYMIbSppj2GYHnvpZ9W69qmkInS&index=4
 
 ### json을 pydantic으로 검증+변형하여 dict list로 보유
 

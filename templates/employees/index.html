@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI + Htmx</title>
+
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@1.6.1"
+            integrity="sha384-tvG/2mnCFmGQzYC1Oh3qxQ7CkQ9kMzYjWZSNtrRZygHPDDqottzEJsqS4oUVodhW" crossorigin="anonymous">
+    </script>
+    <script>
+        htmx.config.useTemplateFragments = true; // table row 조작을 위한 설정
+        // 없으면 htmx-swap 에러가 남 : htmx.org@1.6.1:1 Uncaught TypeError: e.querySelectorAll is not a function
+    </script>
+    <!-- alpinejs -->
+    <script defer src="https://unpkg.com/alpinejs@3.10.3/dist/cdn.min.js"></script>
+
+    <!-- css -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+<div class="mx-4" x-data="{ results : {{ employees }}, chosenDepartment: 'ALL' }">
+    <h1 class="text-2xl font-bold mb-4">Employees</h1>
+
+    <select x-model="chosenDepartment">
+        <option name="dept" value="ALL">ALL</option>
+        {% for department in departments %}
+        <option name="dept" value="{{department}}">{{ department }}</option>
+        {% endfor %}
+    </select>
+
+    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700">
+        <tr>
+            <th scope="col" class="px-6 py-3">First Name</th>
+            <th scope="col" class="px-6 py-3">Surname</th>
+            <th scope="col" class="px-6 py-3">Department</th>
+            <th scope="col" class="px-6 py-3">Job Title</th>
+        </tr>
+        </thead>
+        <tbody>
+        <template x-for="result in results.filter(r => chosenDepartment =='ALL' || r.Department.name == chosenDepartment)">
+            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                <td x-text="result.Employee.first_name"></td>
+                <td x-text="result.Employee.surname"></td>
+                <td x-text="result.Department.name"></td>
+                <td x-text="result.Employee.job_title"></td>
+            </tr>
+        </template>
+        </tbody>
+    </table>
+</div>
+</body>
+
+</html>

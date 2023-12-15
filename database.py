@@ -6,7 +6,8 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///./sqlite.db"
 # SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False},
+    echo=True, # 관계객체(EmpDept) 확인을 위해 engine에 echo 추가
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
