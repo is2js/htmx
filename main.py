@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import pathlib
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
@@ -19,12 +18,16 @@ from starlette.staticfiles import StaticFiles
 
 import models
 from database import SessionLocal, engine
+from schemas.picstagrams import UserSchema, CommentSchema, PostSchema
 from schemas.tracks import Track
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 
 models.Base.metadata.create_all(bind=engine)
 
+# 메모리 데이터 모음
 tracks_data = []
+# users, comments, posts = [], [], []
+from crud.picstragrams import users, posts, comments, get_users, get_comments
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -39,14 +42,73 @@ async def lifespan(app: FastAPI):
     await init_movie_dict_to_db(db)
 
     # 2) [tracks] json -> dict -> pydantic schema model
-    await init_tracks_json_to_list()
+    await init_tracks_json_to_dict_list()
 
     # 3) [EmpDept] dict -> sqlalchemy orm class
     await init_emp_dept_dict_to_db(db)
 
+    # 4) [Picstragram] dict -> pydantic schema model
+    # global users, comments, posts
+    users_, comments_, posts_ = await init_picstragram_json_to_list_per_pydantic_model()
+    users.extend(users_)
+    comments.extend(comments_)
+    posts.extend(posts_)
+
+    # comments = comments_
+    # posts = posts_
+
     yield
 
     # shutdown
+
+
+async def init_picstragram_json_to_list_per_pydantic_model():
+    """
+    json을 도메인(user, post, comment별로 pydantic model list 3개로 나누어 받지만,
+    추후, pydantic_model.model_dumps() -> sqlalchemy model(** )로 넣어서 만들면 된다.
+    => 왜 dict list 3개가 아니라 pydantic model list 3개로 받냐면
+       관계pydantic model을 가지기 위해서이다.
+    ===> 추후, 관계 pydantic model을 -> sqlalchemy Model로 변경해줘야한다.
+    """
+    picstragram_path = pathlib.Path() / 'data' / 'picstragram.json'
+    with open(picstragram_path, 'r') as f:
+        picstragram = json.load(f)
+        # 단순 순회하며 처음부터 append하는 것은 list comp로 처리한다.
+        # + list를 기대하고 dict를 꺼낼 땐 get(, [])로 처리하면 된다.
+
+        users = [UserSchema(**user) for user in picstragram.get("users", [])]
+
+        ## 관계Schema에 집어넣을 땐, next(, None) + pk==fk를 비교하고, 그에 맞는 Schema객체를 넣어준다.
+        # M:1관계 - next(, None)으로 1개만 찾기
+        # comments = [CommentSchema(**user) for user in picstragram.get("comments", [])]
+        comments = [
+            CommentSchema(
+                **comment,
+                # user=next((user for user in users if user.id == comment["user_id"]), None)
+            )
+            for comment in picstragram.get("comments", [])
+        ]
+
+        # M:1(user), 1:M(comments)-list comp로 여러개 찾기
+        # posts = [PostSchema(**user) for user in picstragram.get("posts", [])]
+        # ==> 1:M관계를 미리채워놓으면, M:1관계 comment(M)- posts(1)이 미리 채워져 있는 경우, dump시 무한 반복된다.
+        #     => fk가 주어져있으면 미리 채워놓지 말고, crud에서 채우자.
+        posts = [
+            PostSchema(
+                **post,
+                # user=next((user for user in users if user.id == post["user_id"]), None),
+                # comments=[comment for comment in comments if comment.post_id == post["id"]]
+            )
+            for post in picstragram.get("posts", [])
+        ]
+
+        # 1:M 관계 2개
+        # for user in users:
+            # user.posts = [post for post in posts if post.user_id == user.id]
+            # user.comments = [comment for comment in comments if comment.user_id == user.id]
+
+    print(f"[Picstragram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개의 json 데이터, 각 list에 load")
+    return users, comments, posts
 
 
 async def init_emp_dept_dict_to_db(db):
@@ -136,7 +198,7 @@ async def init_emp_dept_dict_to_db(db):
         print(f"[EmpDept] : {num_employees} employees already in DB.")
 
 
-async def init_tracks_json_to_list():
+async def init_tracks_json_to_dict_list():
     tracks_path = pathlib.Path() / 'data' / 'tracks.json'
     with open(tracks_path, 'r') as f:
         tracks = json.load(f)
@@ -494,3 +556,15 @@ async def hx_upload_file(
     context = {'request': request, 'image_url': image_url, 'mime_type': mime_type}
 
     return templates.TemplateResponse("upload_file/partials/upload-form.html", context)
+
+
+############
+# picstragram
+############
+
+@app.get("/users/")
+async def pic_get_users(request: Request):
+    comment = [dict(**comment.model_dump()) for comment in get_comments()]
+    print(f"comments >> {comments}")
+
+    return comment
