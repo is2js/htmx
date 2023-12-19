@@ -1,0 +1,17 @@
+{% if image_url %}
+<img src="{{ image_url }}" alt="" type="{{ mime_type }}" style="max-width: 200px;max-height: 200px">
+{% else %}
+<p>No photo :(</p>
+{% endif %}
+
+{% if error_message %}
+    <p style="color: red;">에러: {{ error_message }}</p>
+{% endif %}
+
+<form hx-post="{{ url_for('hx_upload_file', directory_name='test') }}"
+      hx-encoding="multipart/form-data"
+      hx-target="#hx-upload-form"
+>
+    <input type="file" name="file_upload"/>
+    <button type="submit">Submit</button>
+</form>

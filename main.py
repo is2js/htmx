@@ -1,24 +1,32 @@
+from __future__ import annotations
+
 import json
+import os
 import pathlib
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 
-from fastapi import Depends, FastAPI, Header, Request
+from fastapi import Depends, FastAPI, Header, Request, UploadFile, Path
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
 
 import models
 from database import SessionLocal, engine
 from schemas import Track
+from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 
 models.Base.metadata.create_all(bind=engine)
 
 tracks_data = []
+
+UPLOAD_DIR = pathlib.Path() / 'uploads'
 
 
 # lifespan for init data
@@ -158,7 +166,25 @@ async def init_movie_dict_to_db(db):
 
 app = FastAPI(lifespan=lifespan)
 
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:8080",
+]
+app.add_middleware(
+    CORSMiddleware,
+    # allow_origins=origins,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 templates = Jinja2Templates(directory="templates")
+# static_directory = pathlib.Path(__file__).resolve().parent / 'static'
+app.mount('/static', StaticFiles(directory='static'), name='static')
+app.mount('/uploads', StaticFiles(directory='uploads'), name='uploads')
 
 
 # Dependency
@@ -354,3 +380,117 @@ def employees(
     }
 
     return templates.TemplateResponse("employees/index.html", context)
+
+
+############
+# fileupload
+############
+
+@app.get('/upload_file')
+async def upload_file(request: Request):
+    context = {'request': request}
+    return templates.TemplateResponse("upload_file/index.html", context)
+
+
+@app.post('/upload_file')
+async def create_upload_file(file_upload: Union[UploadFile, None] = None):
+    # UploadFile의 파라미터명 => input[type="file"]의 name과 일치해야한다!!!
+
+    # 파일이 없는 경우 예외처리
+    if not file_upload:
+        return {'message': 'No file sent'}
+
+    data = await file_upload.read()
+
+    save_to = UPLOAD_DIR / file_upload.filename
+    with open(save_to, 'wb') as f:
+        f.write(data)
+
+    return {'filename': file_upload.filename}
+
+
+@app.post('/upload_files')
+async def create_upload_files(file_uploads: list[UploadFile]):
+    # UploadFile의 파라미터명 => input[type="file"]의 name과 일치해야한다!!!
+
+    # 파일이 없는 경우 예외처리
+    if not file_uploads:
+        return {'message': 'No file sent'}
+
+    # for문 추가 for multiple files(file_uploadssss)
+    for file_upload in file_uploads:
+        data = await file_upload.read()
+
+        save_to = UPLOAD_DIR / file_upload.filename
+        with open(save_to, 'wb') as f:
+            f.write(data)
+
+    # list comp로 변경 for multiple files
+    return {'filenames': [file_upload.filename for file_upload in file_uploads]}
+
+
+############
+# hx fileupload with path parameter(directory name)
+############
+
+@app.post('/hx-upload-file/{directory_name}')
+@app.post('/hx-upload-file/')
+async def hx_upload_file(
+        request: Request,
+        directory_name: str = 'test',
+        file_upload: Union[UploadFile, None] = None
+):
+    # UploadFile의 파라미터명 => input[type="file"]의 name과 일치해야한다!!!
+
+    # 파일이 없는 경우 예외처리
+    if not file_upload:
+        # return {'message': 'No file sent'}
+        context = {'request': request, 'error_message': '파일이 첨부되지 않았습니다.'}
+        return templates.TemplateResponse("upload_file/partials/upload-form.html", context)
+
+    mime_type = file_upload.content_type  # mime_type >> image/png, image/gif, image/jpeg, image/jpeg, image/bmp, image/x-icon
+
+    # 업로드를 이미지로 제한
+    if not mime_type in ['image/png', 'image/gif', 'image/jpeg', 'image/bmp', 'image/x-icon']:
+        # return {'message': 'File is not image'}
+        context = {'request': request, 'error_message': '이미지 파일만 업로드 가능합니다.'}
+        return templates.TemplateResponse("upload_file/partials/upload-form.html", context)
+
+    # 업로드 용량을 2MB로 제한
+    if file_upload.size > 2048000:
+        # return {'message': 'File is too large(plz below 2MB)'}
+        context = {'request': request, 'error_message': '2MB 이하의 파일만 업로드 가능합니다.'}
+        return templates.TemplateResponse("upload_file/partials/upload-form.html", context)
+
+    data = await file_upload.read()
+
+    # save_to = UPLOAD_DIR / file_upload.filename
+
+    # file_path = make_dir_and_file_path('test', UPLOAD_DIR=UPLOAD_DIR)
+    file_path = make_dir_and_file_path(directory_name=directory_name, UPLOAD_DIR=UPLOAD_DIR)
+    file_name, file_ext = get_updated_file_name_and_ext_by_uuid4(file_upload)
+    # save_to = file_path / (file_name + file_ext)
+    # file_name = get_updated_file_name_by_uuid4(file_upload)
+    save_to = file_path / file_name
+
+    # image인 경우, PIL로 열어서 resize하고 저장한다.
+    if mime_type.startswith('image/'):
+        has_thumbnail = create_thumbnail(data, file_path, file_name, mime_type)
+
+    with open(save_to, 'wb') as f:
+        f.write(data)
+
+    # TODO: db에 저장
+    # 파일 저장 후, db 개통 전, [일회성 파일]로서 url만들어 view에서 확인하기
+    # image_url = request.url_for('static', path=save_to) #  'WindowsPath' object has no attribute 'lstrip'
+    # -> 'uploads'가 포함되었지만 test로 넣어본 save_to -> WindowPath객체로서 안들어감 #  'WindowsPath' object has no attribute 'lstrip'
+    # -> save_to는 file system의 경로 <-> upload(static)폴더 + path= 디렉토리 + 파일명.확장자 경로가 다름
+    image_url = request.url_for('uploads', path=directory_name + '/' + file_name) if not has_thumbnail \
+        else request.url_for('uploads', path=directory_name + '/' + file_name + '-thumbnail')
+    # image_url >> http://127.0.0.1:8000/uploads/test/f15db93682eb40d5a1c9828a8afac2a6.png
+
+    # return {'filename': file_upload.filename}
+    # context = {'request': request, 'image_url': image_url}
+    context = {'request': request, 'image_url': image_url, 'mime_type': mime_type}
+
+    return templates.TemplateResponse("upload_file/partials/upload-form.html", context)

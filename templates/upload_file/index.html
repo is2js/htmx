@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- dropzone js -->
+    <script src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js"></script>
+    <link href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css"/>
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@1.6.1"
+            integrity="sha384-tvG/2mnCFmGQzYC1Oh3qxQ7CkQ9kMzYjWZSNtrRZygHPDDqottzEJsqS4oUVodhW" crossorigin="anonymous">
+    </script>
+    <script>
+        htmx.config.useTemplateFragments = true; // table row 조작을 위한 설정
+        // 없으면 htmx-swap 에러가 남 : htmx.org@1.6.1:1 Uncaught TypeError: e.querySelectorAll is not a function
+    </script>
+    <title>FastAPI File Upload</title>
+</head>
+<body>
+<h1>FastAPI File Upload</h1>
+<h2>File Upload</h2>
+<form action="{{ url_for('create_upload_file') }}" method="POST"
+      enctype="multipart/form-data">
+    <input type="file" name="file_upload"/>
+    <button type="submit">Submit</button>
+</form>
+
+<h2>Multiple File Upload</h2>
+<form action="{{ url_for('create_upload_file') }}" method="POST"
+      enctype="multipart/form-data">
+    <input type="file" name="file_uploads" multiple/>
+    <button type="submit">Submit</button>
+</form>
+
+<h2>Dropzone.js Multiple File Upload with 1 File Upload route</h2>
+<!-- 1) id와 class="dropzone"이 추가된다.-->
+<!-- 2) enctype="multipart/form-data" 삭제한다. dropzone이 알아서 처리하게 한다-->
+<!-- 3) input태그와 submit버튼 또한 삭제한다. dropzone에 위임-->
+
+<!--    <input type="file" name="file_uploads" multiple/>-->
+<!--    <button type="submit">Submit</button>-->
+
+<!-- 4) 사실상 파일갯수만큼, route를 비동기호출(ajax)하므로, 파일1개 업로드 route만 호출하면 된다.-->
+<form action="{{ url_for('create_upload_file') }}" method="POST"
+      class="dropzone"
+      id="my-awesome-dropzone"
+>
+</form>
+<script>
+    let myDropzone = new Dropzone("#my-awesome-dropzone", {
+        paramName: "file_upload", // The (input[type="file"태그의) name -> fastapi UploadFile 파라미터와 일치해야함.
+    });
+</script>
+
+
+<h2>htmx with 비어있는 필드-jinja변수 \{\{ user.image_url \}\}을 채워서 재렌더링</h2>
+<div id="hx-upload-form">
+    {% include 'upload_file/partials/upload-form.html' %}
+</div>
+</body>
+</html>

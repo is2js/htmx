@@ -1,5 +1,7 @@
 - 참고유튜브: https://www.youtube.com/watch?v=qlXJu2U1jc4&list=PL-2EBeDYMIbSppj2GYHnvpZ9W69qmkInS&index=5
 - 초기깃허브: https://github.com/bugbytes-io/fastapi-alpinejs
+- 3관계 backend: https://www.youtube.com/watch?v=BxxDQOo_rNI&list=PL-2EBeDYMIbRByZ8GXhcnQSuv2dog4JxY&index=26
+
 
 ### 데이터 -> DB 준비
 
