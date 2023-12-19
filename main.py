@@ -19,7 +19,7 @@ from starlette.staticfiles import StaticFiles
 
 import models
 from database import SessionLocal, engine
-from schemas import Track
+from schemas.tracks import Track
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 
 models.Base.metadata.create_all(bind=engine)
