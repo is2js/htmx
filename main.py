@@ -5,7 +5,7 @@ import pathlib
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 
-from fastapi import Depends, FastAPI, Header, Request, UploadFile, Path
+from fastapi import Depends, FastAPI, Header, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 
@@ -27,7 +27,7 @@ models.Base.metadata.create_all(bind=engine)
 # 메모리 데이터 모음
 tracks_data = []
 # users, comments, posts = [], [], []
-from crud.picstragrams import users, posts, comments, get_users, get_comments
+from crud.picstragrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -53,9 +53,6 @@ async def lifespan(app: FastAPI):
     users.extend(users_)
     comments.extend(comments_)
     posts.extend(posts_)
-
-    # comments = comments_
-    # posts = posts_
 
     yield
 
@@ -104,8 +101,8 @@ async def init_picstragram_json_to_list_per_pydantic_model():
 
         # 1:M 관계 2개
         # for user in users:
-            # user.posts = [post for post in posts if post.user_id == user.id]
-            # user.comments = [comment for comment in comments if comment.user_id == user.id]
+        # user.posts = [post for post in posts if post.user_id == user.id]
+        # user.comments = [comment for comment in comments if comment.user_id == user.id]
 
     print(f"[Picstragram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개의 json 데이터, 각 list에 load")
     return users, comments, posts
@@ -562,9 +559,68 @@ async def hx_upload_file(
 # picstragram
 ############
 
-@app.get("/users/")
+@app.get("/users/", response_model=List[UserSchema])
 async def pic_get_users(request: Request):
-    comment = [dict(**comment.model_dump()) for comment in get_comments()]
-    print(f"comments >> {comments}")
+    users = get_users(with_posts=True, with_comments=True)
 
-    return comment
+    return users
+
+
+@app.get("/users/{user_id}", response_model=Union[UserSchema, str])
+async def pic_get_user(
+        request: Request,
+        user_id: int,
+        response: Response,
+):
+    user = get_user(user_id, with_posts=True, with_comments=True)
+
+    if user is None:
+        response.status_code = 404
+        return "User 정보가 없습니다."
+
+    return user
+
+
+@app.post("/users", response_model=Union[UserSchema, str], status_code=201)
+async def pic_create_user(
+        request: Request,
+        user_schema: UserSchema,
+        response: Response,
+):
+    try:
+        user = create_user(user_schema)
+
+        return user
+    except Exception as e:
+        response.status_code = 400
+        return f"User 생성에 실패했습니다.: {e}"
+
+
+@app.put("/users/{user_id}", response_model=Union[UserSchema, str])
+async def pic_update_user(
+        request: Request,
+        user_id: int,
+        user_schema: UserSchema,
+        response: Response,
+):
+    try:
+        user = update_user(user_id, user_schema)
+        return user
+
+    except Exception as e:
+        response.status_code = 400
+        return f"User 수정에 실패했습니다.: {e}"
+
+
+@app.delete("/users/{user_id}", )
+async def pic_update_user(
+        request: Request,
+        user_id: int,
+        response: Response,
+):
+    try:
+        delete_user(user_id)
+        return "User 삭제에 성공했습니다."
+    except Exception as e:
+        response.status_code = 400
+        return f"User 삭제에 실패했습니다.: {e}"
