@@ -27,7 +27,9 @@ models.Base.metadata.create_all(bind=engine)
 # 메모리 데이터 모음
 tracks_data = []
 # users, comments, posts = [], [], []
-from crud.picstragrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user
+from crud.picstragrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
+    get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
+    update_comment, delete_comment
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -558,6 +560,9 @@ async def hx_upload_file(
 ############
 # picstragram
 ############
+############
+# picstragram users
+############
 
 @app.get("/users/", response_model=List[UserSchema])
 async def pic_get_users(request: Request):
@@ -589,8 +594,8 @@ async def pic_create_user(
 ):
     try:
         user = create_user(user_schema)
-
         return user
+
     except Exception as e:
         response.status_code = 400
         return f"User 생성에 실패했습니다.: {e}"
@@ -613,7 +618,7 @@ async def pic_update_user(
 
 
 @app.delete("/users/{user_id}", )
-async def pic_update_user(
+async def pic_delete_user(
         request: Request,
         user_id: int,
         response: Response,
@@ -624,3 +629,147 @@ async def pic_update_user(
     except Exception as e:
         response.status_code = 400
         return f"User 삭제에 실패했습니다.: {e}"
+
+
+############
+# picstragram posts
+############
+
+@app.get("/posts/", response_model=List[PostSchema])
+async def pic_get_posts(request: Request):
+    posts = get_posts(with_user=True, with_comments=True)
+    return posts
+
+
+@app.get("/posts/{post_id}", response_model=Union[PostSchema, str])
+async def pic_get_post(
+        request: Request,
+        post_id: int,
+        response: Response,
+):
+    post = get_post(post_id, with_user=True, with_comments=True)
+
+    if post is None:
+        response.status_code = 404
+        return "Post 정보가 없습니다."
+
+    return post
+
+
+@app.post("/posts", response_model=Union[PostSchema, str], status_code=201)
+async def pic_create_post(
+        request: Request,
+        post_schema: PostSchema,
+        response: Response,
+):
+    try:
+        post = create_post(post_schema)
+        return post
+
+    except Exception as e:
+        response.status_code = 400
+        return f"Post 생성에 실패했습니다.: {e}"
+
+
+@app.put("/posts/{post_id}", response_model=Union[PostSchema, str])
+async def pic_update_post(
+        request: Request,
+        post_id: int,
+        post_schema: PostSchema,
+        response: Response,
+):
+    try:
+        post = update_post(post_id, post_schema)
+        return post
+
+    except Exception as e:
+        response.status_code = 400
+        return f"Post 수정에 실패했습니다.: {e}"
+
+
+@app.delete("/posts/{post_id}", )
+async def pic_delete_post(
+        request: Request,
+        post_id: int,
+        response: Response,
+):
+    try:
+        delete_post(post_id)
+        return "Post 삭제에 성공했습니다."
+    except Exception as e:
+        response.status_code = 400
+        return f"Post 삭제에 실패했습니다.: {e}"
+
+
+############
+# picstragram comments
+############
+@app.get("/comments/{comment_id}", response_model=Union[CommentSchema, str])
+async def pic_get_comment(
+        request: Request,
+        comment_id: int,
+        response: Response,
+):
+    comment = get_comment(comment_id, with_user=True)
+
+    if comment is None:
+        response.status_code = 404
+        return "Comment 정보가 없습니다."
+
+    return comment
+
+
+@app.get("posts/{post_id}/comments", response_model=List[CommentSchema])
+async def pic_get_comments(
+        request: Request,
+        post_id: int,
+        response: Response,
+):
+    comments = get_comments(post_id, with_user=True)
+
+    return comments
+
+
+@app.post("/comments", response_model=Union[CommentSchema, str], status_code=201)
+async def pic_create_comments(
+        request: Request,
+        comment_schema: CommentSchema,
+        response: Response,
+):
+    try:
+        comment = create_comment(comment_schema)
+        return comment
+
+    except Exception as e:
+        response.status_code = 400
+        return f"Comment 생성에 실패했습니다.: {e}"
+
+
+@app.put("/comments/{comment_id}", response_model=Union[CommentSchema, str])
+async def pic_update_comment(
+        request: Request,
+        comment_id: int,
+        comment_schema: CommentSchema,
+        response: Response,
+):
+    try:
+        comment = update_comment(comment_id, comment_schema)
+        return comment
+
+    except Exception as e:
+        response.status_code = 400
+        return f"Comment 수정에 실패했습니다.: {e}"
+
+
+@app.delete("/comments/{comment_id}", )
+async def pic_delete_post(
+        request: Request,
+        comment_id: int,
+        response: Response,
+):
+    try:
+        delete_comment(comment_id)
+        return "Comment 삭제에 성공했습니다."
+    except Exception as e:
+        response.status_code = 400
+        return f"Comment 삭제에 실패했습니다.: {e}"
