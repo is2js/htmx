@@ -18,7 +18,7 @@ from starlette.staticfiles import StaticFiles
 
 import models
 from database import SessionLocal, engine
-from schemas.picstagrams import UserSchema, CommentSchema, PostSchema
+from schemas.picstagrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema
 from schemas.tracks import Track
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 
@@ -29,7 +29,7 @@ tracks_data = []
 # users, comments, posts = [], [], []
 from crud.picstragrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
-    update_comment, delete_comment
+    update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -51,10 +51,13 @@ async def lifespan(app: FastAPI):
 
     # 4) [Picstragram] dict -> pydantic schema model
     # global users, comments, posts
-    users_, comments_, posts_ = await init_picstragram_json_to_list_per_pydantic_model()
+    users_, comments_, posts_, likes_, tags_, post_tags_ = await init_picstragram_json_to_list_per_pydantic_model()
     users.extend(users_)
     comments.extend(comments_)
     posts.extend(posts_)
+    likes.extend(likes_)
+    tags.extend(tags_)
+    post_tags.extend(post_tags_)
 
     yield
 
@@ -69,7 +72,9 @@ async def init_picstragram_json_to_list_per_pydantic_model():
        관계pydantic model을 가지기 위해서이다.
     ===> 추후, 관계 pydantic model을 -> sqlalchemy Model로 변경해줘야한다.
     """
-    picstragram_path = pathlib.Path() / 'data' / 'picstragram.json'
+    # picstragram_path = pathlib.Path() / 'data' / 'picstragram.json'
+    picstragram_path = pathlib.Path() / 'data' / 'picstragram2.json'
+
     with open(picstragram_path, 'r') as f:
         picstragram = json.load(f)
         # 단순 순회하며 처음부터 append하는 것은 list comp로 처리한다.
@@ -106,8 +111,15 @@ async def init_picstragram_json_to_list_per_pydantic_model():
         # user.posts = [post for post in posts if post.user_id == user.id]
         # user.comments = [comment for comment in comments if comment.user_id == user.id]
 
-    print(f"[Picstragram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개의 json 데이터, 각 list에 load")
-    return users, comments, posts
+    # 다대다 추가
+    likes = [LikeSchema(**like) for like in picstragram.get("likes", [])]
+    tags = [TagSchema(**tag) for tag in picstragram.get("tags", [])]
+    post_tags = [PostTagSchema(**tag) for tag in picstragram.get("post_tags", [])]
+
+    print(
+        f"[Picstragram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, likes-{len(likes)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개"
+        f"의 json 데이터, 각 list에 load")
+    return users, comments, posts, likes, tags, post_tags
 
 
 async def init_emp_dept_dict_to_db(db):
@@ -637,7 +649,8 @@ async def pic_delete_user(
 
 @app.get("/posts/", response_model=List[PostSchema])
 async def pic_get_posts(request: Request):
-    posts = get_posts(with_user=True, with_comments=True)
+    # posts = get_posts(with_user=True, with_comments=True)
+    posts = get_posts(with_user=True, with_comments=True, with_likes=True)
     return posts
 
 
@@ -647,7 +660,8 @@ async def pic_get_post(
         post_id: int,
         response: Response,
 ):
-    post = get_post(post_id, with_user=True, with_comments=True)
+    # post = get_post(post_id, with_user=True, with_comments=True)
+    post = get_post(post_id, with_user=True, with_comments=True, with_likes=True)
 
     if post is None:
         response.status_code = 404
@@ -731,7 +745,7 @@ async def pic_get_comments(
 
 
 @app.post("/comments", response_model=Union[CommentSchema, str], status_code=201)
-async def pic_create_comments(
+async def pic_create_comment(
         request: Request,
         comment_schema: CommentSchema,
         response: Response,
@@ -762,7 +776,7 @@ async def pic_update_comment(
 
 
 @app.delete("/comments/{comment_id}", )
-async def pic_delete_post(
+async def pic_delete_comment(
         request: Request,
         comment_id: int,
         response: Response,
@@ -773,3 +787,59 @@ async def pic_delete_post(
     except Exception as e:
         response.status_code = 400
         return f"Comment 삭제에 실패했습니다.: {e}"
+
+
+############
+# picstragram like
+############
+@app.post("/like", response_model=Union[LikeSchema, str], status_code=201)
+async def pic_create_like(
+        request: Request,
+        like_schema: LikeSchema,
+        response: Response,
+):
+    try:
+        like = create_like(like_schema)
+        return like
+
+    except Exception as e:
+        response.status_code = 400
+        return f"like 생성에 실패했습니다.: {e}"
+
+
+# TODO: 나중에 로그인 + db 구현후 path param으로 옮겨주기
+# @app.post("/posts/{post_id}/likes", response_model=Union[LikeSchema, str], status_code=201) 
+@app.post("/posts/likes", response_model=Union[LikeSchema, str], status_code=201)
+async def pic_create_or_delete_like(
+        request: Request,
+        # post_id: int, # TODO: db 구현 후 1) post_id : path param + 2) user_id : request.user...
+        like_schema: LikeSchema,
+        response: Response,
+):
+    # 현재 post에서 실질중간테입르 likes를 many로 불러온다. 이 때, 반대편one인 user가 포함되어있어서, 결국엔 user list에 접근가능해진다.
+    # -> 현재) 특정 post_id -현재의 나 like_schema.user_id
+    # -> TODO: 추후) 특정 post_id(path_param) +  post.likes.add( request.user객체-현재의나 ) -> schema 없어도 됨.
+    post = get_post(
+        like_schema.post_id,
+        with_user=True,  # 작성자 <-> 현재의 나 비교
+        with_likes=True
+    )
+
+    # 1) 일단 좋아요 누른사람(like_schema.user_id)이 작성자(post.user.id)면, pass한다.
+    if (author_id := post.user.id) == like_schema.user_id:
+        raise Exception(f"자신(id={author_id})의 post(id={post.id})에는 좋아요를 누를 수 없습니다.")
+
+    try:
+        # 2) post.likes의 many데이터마다 박혀있는 user들을 list안에  좋아요누른사람의  포함여부(in)를 확인하고
+        # -> 포함시 delete / 미포함시 create 작동을 하면 된다.
+        if like_schema.user_id in [like.user.id for like in post.likes]:
+            delete_like(like_schema)
+            return f"이미 좋아요를 누른 게시물이어서, 좋아요를 제거합니다."
+
+        else:
+            create_like(like_schema)
+            return f"현재 게시물에 좋아요를 눌렀습니다."
+
+    except Exception as e:
+        response.status_code = 400
+        return f"좋아요를 누른 것에 실패했습니다.: {e}"
