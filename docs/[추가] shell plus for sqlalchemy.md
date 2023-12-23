@@ -28,3 +28,15 @@
     
     embed(colors='neutral', banner2=banner)
     ```
+   
+   
+
+2. terminal에서 `python shell.py`로 ipython처럼 접속
+
+3. **`globals()['import할 변수명'] = `을 통해 미리 import하고 싶은 객체, 모듈을 넣어놓는다.**
+    ```python
+    #### custom import 시작=========================
+    # sqlalchemy session객체 추가
+    globals()['db'] = SessionLocal()
+    #### custom import 끝=========================
+    ```

@@ -15,11 +15,11 @@ for clzz in Base.registry._class_registry.values():
         import_string = f'from {clzz.__module__} import {clzz.__name__}\n'
         banner = banner + import_string
 
-# custom import 추가=========================
-
-# 1. session객체 추가
+#### custom import 시작=========================
+# sqlalchemy session객체 추가
 globals()['db'] = SessionLocal()
+#### custom import 끝=========================
 
-# custom import 추가=========================
+
 
 embed(colors='neutral', banner2=banner)

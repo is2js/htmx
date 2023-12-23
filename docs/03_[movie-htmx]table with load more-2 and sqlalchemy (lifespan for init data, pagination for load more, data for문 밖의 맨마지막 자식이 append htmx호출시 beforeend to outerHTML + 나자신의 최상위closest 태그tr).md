@@ -1,6 +1,7 @@
 - 참고유튜브: https://www.youtube.com/watch?v=8SPF6TBVj28&list=PL-2EBeDYMIbSppj2GYHnvpZ9W69qmkInS&index=2
 
 1. sqlalchemy 패키지 설치 및 루트에 `database.py` 생성
+
 2. [fastapi SQL database 문서 ](https://fastapi.tiangolo.com/tutorial/sql-databases/?h=database)에서 필요한 코드들 복붙
     ```python
     from sqlalchemy import create_engine
@@ -225,14 +226,14 @@
     ```
     ![img.png](../images/10.png)
     - 하지만 문제점은 htmx 호출시 Loadmore이 반복해서 나타나게 된다.
-    ![img.png](../images/11.png)
+      ![img.png](../images/11.png)
     - **맨마지막 `tr의 LoadMore 자체`를 `partials 자체`를 체인지시켜야한다.**
 
 
 13. **`데이터 추가 요소가 data for문 밖의 맨마지막 자식`일시 `hx-swap`을 `beforeend to outerHTML`으로 `자기자신을 partials로 변경`**
     - **swap될 `hx-target`은 `htmx를 호출하는 나 자신의 최상위태그`인 `closest tr`을 활용한다**
-      - 부모를 target로 계속 지정해놓으면 append개념이 자체바뀜(outerHTML)로 바뀌면서, 아예 통째로 갈아져버린다.
-      - swap의 target은, 나 자신이 바뀌어야하며, 나 자신이 button태그가 아니라, 데이터단위 최상위 태그인 tr태그다.
+        - 부모를 target로 계속 지정해놓으면 append개념이 자체바뀜(outerHTML)로 바뀌면서, 아예 통째로 갈아져버린다.
+        - swap의 target은, 나 자신이 바뀌어야하며, 나 자신이 button태그가 아니라, 데이터단위 최상위 태그인 tr태그다.
     ```html
     {% for film in films %}
     <tr>
