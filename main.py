@@ -29,7 +29,8 @@ tracks_data = []
 # users, comments, posts = [], [], []
 from crud.picstragrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
-    update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like
+    update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
+    update_tag, delete_tag
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -593,7 +594,7 @@ async def pic_get_user(
 
     if user is None:
         response.status_code = 404
-        return "User 정보가 없습니다."
+        return f"User(id={user_id}) 정보가 없습니다."
 
     return user
 
@@ -650,7 +651,7 @@ async def pic_delete_user(
 @app.get("/posts/", response_model=List[PostSchema])
 async def pic_get_posts(request: Request):
     # posts = get_posts(with_user=True, with_comments=True)
-    posts = get_posts(with_user=True, with_comments=True, with_likes=True)
+    posts = get_posts(with_user=True, with_comments=True, with_likes=True, with_tags=True)
     return posts
 
 
@@ -661,7 +662,8 @@ async def pic_get_post(
         response: Response,
 ):
     # post = get_post(post_id, with_user=True, with_comments=True)
-    post = get_post(post_id, with_user=True, with_comments=True, with_likes=True)
+    # post = get_post(post_id, with_user=True, with_comments=True, with_likes=True)
+    post = get_post(post_id, with_user=True, with_comments=True, with_likes=True, with_tags=True)
 
     if post is None:
         response.status_code = 404
@@ -843,3 +845,73 @@ async def pic_create_or_delete_like(
     except Exception as e:
         response.status_code = 400
         return f"좋아요를 누른 것에 실패했습니다.: {e}"
+
+
+############
+# picstragram tags
+############
+@app.get("/tags/", response_model=List[TagSchema])
+async def pic_get_tags(request: Request):
+    tags = get_tags(with_posts=True)
+
+    return tags
+
+
+@app.get("/tags/{tag_id}", response_model=Union[TagSchema, str])
+async def pic_get_tag(
+        request: Request,
+        tag_id: int,
+        response: Response,
+):
+    tag = get_tag(tag_id, with_posts=True)
+
+    if tag is None:
+        response.status_code = 404
+        return f"Tag(id={tag_id}) 정보가 없습니다."
+
+    return tag
+
+
+@app.post("/tags", response_model=Union[TagSchema, str], status_code=201)
+async def pic_create_tag(
+        request: Request,
+        tag_schema: TagSchema,
+        response: Response,
+):
+    try:
+        tag = create_tag(tag_schema)
+        return tag
+
+    except Exception as e:
+        response.status_code = 400
+        return f"Tag 생성에 실패했습니다.: {e}"
+
+
+@app.put("/tags/{tag_id}", response_model=Union[TagSchema, str])
+async def pic_update_tag(
+        request: Request,
+        tag_id: int,
+        tag_schema: TagSchema,
+        response: Response,
+):
+    try:
+        tag = update_tag(tag_id, tag_schema)
+        return tag
+
+    except Exception as e:
+        response.status_code = 400
+        return f"Tag 수정에 실패했습니다.: {e}"
+
+
+@app.delete("/tags/{tag_id}", )
+async def pic_delete_tag(
+        request: Request,
+        tag_id: int,
+        response: Response,
+):
+    try:
+        delete_tag(tag_id)
+        return "Tag 삭제에 성공했습니다."
+    except Exception as e:
+        response.status_code = 400
+        return f"Tag 삭제에 실패했습니다.: {e}"

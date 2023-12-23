@@ -1,7 +1,7 @@
 # CRUD 함수 정의
 import datetime
 
-from schemas.picstagrams import UserSchema, PostSchema, CommentSchema, LikeSchema
+from schemas.picstagrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema
 
 users, comments, posts, likes, tags, post_tags = [], [], [], [], [], []
 
@@ -92,7 +92,12 @@ def delete_user(user_id: int):
 
 # def get_post(post_id: int, with_user: bool = True, with_comments: bool = False, with_comment_user: bool = False):
 # def get_post(post_id: int, with_user: bool = True, with_comments: bool = False):
-def get_post(post_id: int, with_user: bool = True, with_comments: bool = False, with_likes: bool = False):
+def get_post(
+        post_id: int,
+        with_user: bool = True, with_comments: bool = False, with_likes: bool = False,
+        # with_post_tags: bool = False
+        with_tags: bool = False
+):
     post = next((post for post in posts if post.id == post_id), None)
     if not post:
         return None
@@ -111,10 +116,22 @@ def get_post(post_id: int, with_user: bool = True, with_comments: bool = False, 
             get_like(like.id, with_user=True) for like in likes if like.post_id == post.id
         ]
 
+    # post_tags(중간테이블) 구현후, with_post_tags 추가 -> with_tags 추가
+    # if with_post_tags:
+    #     post.post_tags = get_post_tags_by_post_id(post.id, with_tag=True)
+
+    if with_tags:
+        post.tags = [post_tag.tag for post_tag in get_post_tags_by_post_id(post.id, with_tag=True)]
+
     return post
 
 
-def get_posts(with_user: bool = False, with_comments: bool = False, with_likes: bool = False):
+def get_posts(
+        with_user: bool = False,
+        with_comments: bool = False,
+        with_likes: bool = False,
+        with_tags: bool = False
+):
     # one은 next()로 찾는 get_user()를 재활용
     if with_user:
         for post in posts:
@@ -130,12 +147,14 @@ def get_posts(with_user: bool = False, with_comments: bool = False, with_likes: 
     # 실질 중간테이블 like를 many로 넣으면 -> 반대편 one(user) list도 many로 써 담기게 된다.
     if with_likes:
         for post in posts:
-            # post.likes = [
-            #     get_like(like.id, with_user=True) for like in likes if like.post_id == post.id
-            # ]
-
-            # refactoring(안해도 되지만, get_likes()를 정의한 김에
             post.likes = get_likes(post.id, with_user=True)
+
+    # 중간테이블 post_tags를 many로 추가 -> 조회/삭제시 옵션 추가
+    if with_tags:
+        for post in posts:
+            post.tags = [
+                post_tag.tag for post_tag in get_post_tags_by_post_id(post.id, with_tag=True)
+            ]
 
     return posts
 
@@ -199,6 +218,9 @@ def delete_post(post_id: int):
     global likes
     likes = [like for like in likes if like.post_id != post_id]
 
+    global post_tags
+    post_tags = [post_tag for post_tag in post_tags if post_tag.post_id != post_id]
+
 
 # new) eagerload를 하더라도 순환참조에러 발생할 수 있으니, with_xxx를 붙여서 처리한다.
 def get_comment(comment_id: int, with_user: bool = False):
@@ -217,23 +239,6 @@ def get_comment(comment_id: int, with_user: bool = False):
     return comment
 
 
-def get_like(like_id: int, with_user: bool = False):
-    like = next((like for like in likes if like.id == like_id), None)
-    if not like:
-        return None
-
-    if with_user:
-        user = get_user(like.user_id)
-
-        if not user:
-            return None
-
-        like.user = user
-
-    return like
-
-
-# new) comments의 경우, 단독으로 전체조회X -> path param post_id로 조회
 def get_comments(post_id: int, with_user: bool = False):
     # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
     post = get_post(post_id)
@@ -250,23 +255,6 @@ def get_comments(post_id: int, with_user: bool = False):
     return [comment for comment in comments if comment.post_id == post_id]
 
 
-def get_likes(post_id: int, with_user: bool = False):
-    # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
-    post = get_post(post_id)
-    if not post:
-        return []
-
-    # one을 eagerload할 경우, get_like(,with_user=)를 이용하여 early return
-    # -> 아닐 경우, list compt fk조건으로 데이터 반환
-    if with_user:
-        return [
-            get_like(like.id, with_user=True) for like in likes if like.post_id == post_id
-        ]
-
-    return [like for like in likes if like.post_id == post_id]
-
-
-# new) many생성시, schema 속  fk로 온 one_id -> 파라미터로 + 내부 one존재여부 검사 필수
 def create_comment(comment_schema: CommentSchema):
     # new) many생성시 one존재여부 검사 필수 -> 없으면 404 에러
     user = get_user(comment_schema.user_id)
@@ -287,35 +275,6 @@ def create_comment(comment_schema: CommentSchema):
         raise e
 
     return comment_schema
-
-
-def create_like(like_schema: LikeSchema):
-    user = get_user(like_schema.user_id)
-    if not user:
-        raise Exception(f"해당 user(id={like_schema.user_id})가 존재하지 않습니다.")
-    post = get_post(like_schema.post_id)
-    if not post:
-        raise Exception(f"해당 post(id={like_schema.post_id})가 존재하지 않습니다.")
-
-    # new) like는 1user, 1post 당 1회만 생성가능하므로, 존재여부 추가
-    # like = next(
-    #     (like for like in likes if like.user_id == like_schema.user_id and like.post_id == like_schema.post_id), None
-    # )
-    # if like:
-    #     raise Exception(f"이미 좋아요를 누른 게시물입니다.")
-    # ===> 이미 좋아요 눌렀으면 제한이 아니라 풀리게 한다.
-
-    try:
-        # id + created_at, updated_at 부여
-        like_schema.id = find_max_id(comments) + 1
-        like_schema.created_at = datetime.datetime.now()
-
-        likes.append(like_schema)
-
-    except Exception as e:
-        raise e
-
-    return like_schema
 
 
 def update_comment(comment_id: int, comment_schema: CommentSchema):
@@ -348,7 +307,226 @@ def delete_comment(comment_id: int):
     comments = [comment for comment in comments if comment.post_id != comment_id]
 
 
+def get_like(like_id: int, with_user: bool = False):
+    like = next((like for like in likes if like.id == like_id), None)
+    if not like:
+        return None
+
+    if with_user:
+        user = get_user(like.user_id)
+
+        if not user:
+            return None
+
+        like.user = user
+
+    return like
+
+
+def get_likes(post_id: int, with_user: bool = False):
+    # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
+    post = get_post(post_id)
+    if not post:
+        return []
+
+    # one을 eagerload할 경우, get_like(,with_user=)를 이용하여 early return
+    # -> 아닐 경우, list compt fk조건으로 데이터 반환
+    if with_user:
+        return [
+            get_like(like.id, with_user=True) for like in likes if like.post_id == post_id
+        ]
+
+    return [like for like in likes if like.post_id == post_id]
+
+
+def create_like(like_schema: LikeSchema):
+    user = get_user(like_schema.user_id)
+    if not user:
+        raise Exception(f"해당 user(id={like_schema.user_id})가 존재하지 않습니다.")
+    post = get_post(like_schema.post_id)
+    if not post:
+        raise Exception(f"해당 post(id={like_schema.post_id})가 존재하지 않습니다.")
+
+    # new) like는 1user, 1post 당 1회만 생성가능하므로, 존재여부 추가
+    # like = next(
+    #     (like for like in likes if like.user_id == like_schema.user_id and like.post_id == like_schema.post_id), None
+    # )
+    # if like:
+    #     raise Exception(f"이미 좋아요를 누른 게시물입니다.")
+    # ===> 이미 좋아요 눌렀으면 제한이 아니라 풀리게 한다.
+
+    try:
+        # id + created_at, updated_at 부여
+        like_schema.id = find_max_id(comments) + 1
+        like_schema.created_at = datetime.datetime.now()
+
+        likes.append(like_schema)
+
+    except Exception as e:
+        raise e
+
+    return like_schema
+
+
 # new) create_or_delete의 판단상황이므로, 삭제를 like_id가 안들어온다. post_id, user_id로 삭제처리한다.
+def delete_like(like_schema: LikeSchema):
+    user = get_user(like_schema.user_id)
+    if not user:
+        raise Exception(f"해당 user(id={like_schema.user_id})가 존재하지 않습니다.")
+    post = get_post(like_schema.post_id)
+    if not post:
+        raise Exception(f"해당 post(id={like_schema.post_id})가 존재하지 않습니다.")
+
+    global likes
+    likes = [like for like in likes if like.post_id != like_schema.post_id and like.user_id != like_schema.user_id]
+
+
+# def get_tag(tag_id: int):
+def get_tag(tag_id: int, with_posts: bool = False):
+    tag = next((tag for tag in tags if tag.id == tag_id), None)
+    if not tag:
+        return None
+
+    if with_posts:
+        tag.posts = [post_tag.post for post_tag in get_post_tags_by_tag_id(tag.id, with_post=True)]
+
+    return tag
+
+
+def get_tags(with_posts: bool = False):
+    if with_posts:
+        for tag in tags:
+            tag.posts = [
+                post_tag.post for post_tag in get_post_tags_by_tag_id(tag.id, with_post=True)
+            ]
+    return tags
+
+
+def create_tag(tag_schema: TagSchema):
+    try:
+        # id 부여
+        tag_schema.id = find_max_id(tags) + 1
+        # created_at, updated_at 부여
+        tag_schema.created_at = tag_schema.updated_at = datetime.datetime.now()
+
+        tags.append(tag_schema)
+    except Exception as e:
+        raise e
+
+    return tag_schema
+
+
+def update_tag(tag_id: int, tag_schema: TagSchema):
+    tag = get_tag(tag_id)
+    if not tag:
+        raise Exception(f"해당 tag(id={tag_id})가 존재하지 않습니다.")
+
+    # TODO: update Schema가 개발되면 model(**user_schema.model_dump())로 대체
+    # -> 지금은 업데이트 허용 필드를 직접 할당함.
+    tag.name = tag_schema.name
+
+    tag.updated_at = datetime.datetime.now()
+
+    return tag
+
+
+def delete_tag(tag_id: int):
+    tag = get_tag(tag_id)
+    if not tag:
+        raise Exception(f"해당 tag(id={tag_id})가 존재하지 않습니다.")
+
+    global tags
+    tags = [tag for tag in tags if tag.id != tag_id]
+
+
+    # post와 중간테이블데이터도 many로서 삭제
+    global post_tags
+    post_tags = [post_tag for post_tag in post_tags if post_tag.tag_id != tag_id]
+
+
+def get_post_tag(post_tag_id: int, with_post: bool = False, with_tag: bool = False):
+    post_tag = next((post_tag for post_tag in post_tags if post_tag.id == post_tag_id), None)
+    if not post_tag:
+        return None
+
+    if with_post:
+        post_tag.post = get_post(post_tag.post_id)
+
+    if with_tag:
+        post_tag.tag = get_tag(post_tag.tag_id)
+
+    return post_tag
+
+
+# post.post_tags -> 각 post_tag에 tag가 박힘 : post.tags 를 위해,
+# post_id로 post_tags를 찾되, 내부에서 post_tags에서는 with_tags를 eagerload한 것을 불러온다.
+def get_post_tags_by_post_id(post_id: int, with_tag: bool = False):
+    # 1) 일단 주인공 fk키의 존재여부 검사 (조회니까 raise 대신 []로 처리)
+    post = get_post(post_id)
+    if not post:
+        return []
+
+    # 2) 메모리데이터에서 특정 post_id로 post_tags를 가져오되,
+    #    post_tags의 각 데이터마다 tag(반대쪽one)이 박혀있도록 eagerload하기 위해
+    #    단일조회메서드(with_tags=True)를 활용한다
+    if not with_tag:
+        return [post_tag for post_tag in post_tags if post_tag.post_id == post_id]
+    else:  # with_tag=True
+        return [
+            get_post_tag(post_tag.id, with_tag=True) for post_tag in post_tags if
+            post_tag.post_id == post_id
+        ]
+
+
+# 순수중간테이블의 주인공2: tag에서 대해서도 전체조회메서드를 만든다.
+# - 단일은 with_로 둘다 반영함.
+def get_post_tags_by_tag_id(tag_id: int, with_post: bool = False):
+    # 1) 일단 주인공 fk키의 존재여부 검사 (조회니까 raise 대신 []로 처리)
+    tag = get_tag(tag_id)
+    if not tag:
+        return []
+
+    # 2) 메모리데이터에서 특정 tag_id로 post_tags를 가져오되,
+    #    post_tags의 각 데이터마다 post(반대쪽one)이 박혀있도록 eagerload하기 위해
+    #    단일조회메서드(with_posts=True)를 활용한다
+    if not with_post:
+        return [post_tag for post_tag in post_tags if post_tag.tag_id == tag_id]
+    else:  # with_post=True
+        return [
+            get_post_tag(post_tag.id, with_post=True) for post_tag in post_tags
+            if post_tag.tag_id == tag_id
+        ]
+
+
+def create_like(like_schema: LikeSchema):
+    user = get_user(like_schema.user_id)
+    if not user:
+        raise Exception(f"해당 user(id={like_schema.user_id})가 존재하지 않습니다.")
+    post = get_post(like_schema.post_id)
+    if not post:
+        raise Exception(f"해당 post(id={like_schema.post_id})가 존재하지 않습니다.")
+
+    # new) like는 1user, 1post 당 1회만 생성가능하므로, 존재여부 추가
+    # like = next(
+    #     (like for like in likes if like.user_id == like_schema.user_id and like.post_id == like_schema.post_id), None
+    # )
+    # if like:
+    #     raise Exception(f"이미 좋아요를 누른 게시물입니다.")
+    # ===> 이미 좋아요 눌렀으면 제한이 아니라 풀리게 한다.
+
+    try:
+        # id + created_at, updated_at 부여
+        like_schema.id = find_max_id(comments) + 1
+        like_schema.created_at = datetime.datetime.now()
+
+        likes.append(like_schema)
+
+    except Exception as e:
+        raise e
+
+    return like_schema
+
+
 def delete_like(like_schema: LikeSchema):
     user = get_user(like_schema.user_id)
     if not user:
