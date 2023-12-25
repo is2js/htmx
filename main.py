@@ -10,6 +10,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 
 from fastapi.templating import Jinja2Templates
+from jinja2.nodes import Node
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.middleware.cors import CORSMiddleware
@@ -256,6 +257,7 @@ app.add_middleware(
 )
 
 templates = Jinja2Templates(directory="templates")
+
 # static_directory = pathlib.Path(__file__).resolve().parent / 'static'
 app.mount('/static', StaticFiles(directory='static'), name='static')
 app.mount('/uploads', StaticFiles(directory='uploads'), name='uploads')
@@ -915,3 +917,33 @@ async def pic_delete_tag(
     except Exception as e:
         response.status_code = 400
         return f"Tag 삭제에 실패했습니다.: {e}"
+
+
+############
+# picstragram templates
+############
+@app.get("/picstragram/", response_class=HTMLResponse)
+async def pic_index(
+        request: Request,
+        hx_request: Optional[str] = Header(None),
+):
+    context = {'request': request}
+    return templates.TemplateResponse("picstragram/index.html", context)
+
+
+@app.get("/picstragram/me", response_class=HTMLResponse)
+async def pic_me(
+        request: Request,
+        hx_request: Optional[str] = Header(None),
+):
+    context = {'request': request}
+    return templates.TemplateResponse("picstragram/me.html", context)
+
+@app.get("/picstragram/users", response_class=HTMLResponse)
+async def pic_users(
+        request: Request,
+        username: Optional[str] = None,
+        hx_request: Optional[str] = Header(None),
+):
+    context = {'request': request}
+    return templates.TemplateResponse("picstragram/user.html", context)

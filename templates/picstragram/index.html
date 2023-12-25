@@ -1,0 +1,91 @@
+{% extends 'picstragram/_page_base.html' %}
+
+{% block content %}
+    <div class="container">
+        <article class="post">
+            <div class="header">
+                {#<a href="user.html"><img src="images/user1.png" class="profile" alt="사용자1" /></a>#}
+                <a href="user.html"><img src="{{ url_for('static', path='images/user1.png') }}" class="profile"
+                                         alt="사용자1"/></a>
+                <a href="user.html">
+                    <div class="name">사용자1</div>
+                </a>
+                <div class="time">2분</div>
+            </div>
+            <div class="contents">
+                <img class="img-fluid" alt="100%x250" src="{{ url_for('static', path='images/post-0003.jpeg') }}">
+            </div>
+            <div class="icons">
+                <div class="icons-left">
+                    <i class="bi bi-heart"></i>
+                    <i class="bi bi-chat"></i>
+                    <i class="bi bi-send"></i>
+                </div>
+                <div class="icons-right">
+                    <i class="bi bi-bookmark"></i>
+                </div>
+            </div>
+            <div class="comments">
+                <div class="comment">
+                    <div class="name">술잊는마을</div>
+                    <div class="comment">맥주 양조장 다녀오셨나요?</div>
+                </div>
+                <div class="comment">
+                    <div class="name">덴덴</div>
+                    <div class="comment">안녕하세요. 좀 거 긴 코멘트를 써봐요 글씨가 잘리는 지도 테스트 할겸 할 말 없지만 주저리 주저리...</div>
+                </div>
+                <div class="comment">
+                    <div class="name">또떠님</div>
+                    <div class="comment">저도 가보고 싶은 곳인데 먼저 가보셨군요. 맛은 있으셨는지??</div>
+                </div>
+            </div>
+            <div class="add-comment">
+                <input type="text" class="form-control" id="comment" placeholder="댓글 달기...">
+            </div>
+        </article>
+    </div>
+    <div class="container">
+        <article class="post">
+            <div class="header">
+                {#<a href="user.html"><img src="images/user2.png" class="profile" alt="사용자2" /></a>#}
+                <a href="user.html"><img src="{{ url_for('static', path='images/user2.png') }}" class="profile"
+                                         alt="사용자2"/></a>
+                <a href="user.html">
+                    <div class="name">사용자2</div>
+                </a>
+                <div class="time">1시간</div>
+            </div>
+            <div class="contents">
+                {#<img class="img-fluid" alt="100%x250" src="./images/post-0004.jpeg">#}
+                <img class="img-fluid" alt="100%x250" src="{{ url_for('static', path='images/post-0004.jpeg') }}">
+            </div>
+            <div class="icons">
+                <div class="icons-left">
+                    <i class="bi bi-heart"></i>
+                    <i class="bi bi-chat"></i>
+                    <i class="bi bi-send"></i>
+                </div>
+                <div class="icons-right">
+                    <i class="bi bi-bookmark"></i>
+                </div>
+            </div>
+            <div class="comments">
+                <div class="comment">
+                    <div class="name">거깃섭</div>
+                    <div class="comment">음식 사진만 찍으시나요?</div>
+                </div>
+                <div class="comment">
+                    <div class="name">지나가던사람</div>
+                    <div class="comment">마늘이 없네?</div>
+                </div>
+                <div class="comment">
+                    <div class="name">너드너드</div>
+                    <div class="comment">안녕하세요</div>
+                </div>
+            </div>
+            <div class="add-comment">
+                <input type="text" class="form-control" id="comment" placeholder="댓글 달기...">
+            </div>
+        </article>
+    </div>
+{% endblock content %}

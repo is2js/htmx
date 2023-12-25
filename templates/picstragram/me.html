@@ -1,0 +1,105 @@
+{% extends 'picstragram/_page_base.html' %}
+
+{% block nav_top %}
+    <header class="nav-top">
+        <a href="index.html" class="back">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <div class="name">NAME</div>
+    </header>
+{% endblock nav_top %}
+
+{% block content %}
+    <div class=" detail">
+        <div class="container user">
+            <div class="user-header">
+                <img src="{{ url_for('static', path='images/user1.png') }}" class="profile" alt="내 공간">
+                <div class="user-detail">
+                    <div class="user-name">
+                        <h2>사용자이름</h2>
+                        <button type="button" class="btn btn-sm btn-more" data-bs-toggle="modal"
+                                data-bs-target="#meModal"><i class="bi bi-three-dots" title="더보기"></i></button>
+                    </div>
+                    <div class="user-actions">
+                        <button type="button" class="btn btn-sm btn-action">프로필 편집</button>
+                    </div>
+                </div>
+            </div>
+            <div class="user-description">사용자 설명</div>
+            <div class="user-followers"><span class="name">ㅇㅇ</span>님 외 10명이 팔로우합니다</div>
+        </div>
+        <ul class="statistics">
+            <li class="statistics-item">
+                <div class="name">게시물</div>
+                <div class="value">1,000</div>
+            </li>
+            <li class="statistics-item">
+                <div class="name">게시물</div>
+                <div class="value">1,000</div>
+            </li>
+            <li class="statistics-item">
+                <div class="name">게시물</div>
+                <div class="value">1,000</div>
+            </li>
+        </ul>
+        <div class="row posts">
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0001.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0002.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0003.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+        </div>
+        <div class="row posts">
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0004.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0005.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0006.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+        </div>
+        <div class="row posts">
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0007.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0008.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0009.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+        </div>
+        <div class="row posts">
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0010.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0011.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+            <div class="col">
+                <img src="{{ url_for('static', path='images/post-0012.jpeg') }}" class="img-fluid" alt="내 공간">
+            </div>
+        </div>
+    </div>
+
+<!-- Modal -->
+<div class="modal fade" id="meModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <ul class="list-group menu">
+                <li class="list-group-item">QR 코드</li>
+                <li class="list-group-item">설정</li>
+                <li class="list-group-item">로그아웃</li>
+                <li class="list-group-item" data-bs-dismiss="modal" aria-label="취소">취소</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
