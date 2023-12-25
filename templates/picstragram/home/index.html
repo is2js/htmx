@@ -1,5 +1,10 @@
 {% extends 'picstragram/_page_base.html' %}
 
+{% block meta %} {{ super() }} {% endblock meta %}
+{% block css %} {{ super() }} {% endblock css %}
+{% block title %}메인{% endblock title %}
+{% block subtitle %}최신포스트{% endblock subtitle %}
+
 {% block content %}
     <div class="container">
         <article class="post">

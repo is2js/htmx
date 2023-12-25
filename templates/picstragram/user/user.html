@@ -1,4 +1,9 @@
 {% extends 'picstragram/_page_base.html' %}
+
+{% block meta %} {{ super() }} {% endblock meta %}
+{% block css %} {{ super() }} {% endblock css %}
+{% block title %}유저 정보{% endblock title %}
+
 {% block nav_top %}
     <header class="nav-top">
         <a href="index.html" class="back">
