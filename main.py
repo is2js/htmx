@@ -21,6 +21,7 @@ import models
 from database import SessionLocal, engine
 from schemas.picstagrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema
 from schemas.tracks import Track
+from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 
 models.Base.metadata.create_all(bind=engine)
@@ -77,7 +78,7 @@ async def init_picstragram_json_to_list_per_pydantic_model():
     # picstragram_path = pathlib.Path() / 'data' / 'picstragram.json'
     picstragram_path = pathlib.Path() / 'data' / 'picstragram2.json'
 
-    with open(picstragram_path, 'r') as f:
+    with open(picstragram_path, 'r', encoding='utf-8') as f:
         picstragram = json.load(f)
         # 단순 순회하며 처음부터 append하는 것은 list comp로 처리한다.
         # + list를 기대하고 dict를 꺼낼 땐 get(, [])로 처리하면 된다.
@@ -261,6 +262,9 @@ templates = Jinja2Templates(directory="templates")
 # static_directory = pathlib.Path(__file__).resolve().parent / 'static'
 app.mount('/static', StaticFiles(directory='static'), name='static')
 app.mount('/uploads', StaticFiles(directory='uploads'), name='uploads')
+
+# template filter 추가
+templates.env.filters['feed_time'] = feed_time
 
 
 # Dependency
@@ -927,7 +931,11 @@ async def pic_index(
         request: Request,
         hx_request: Optional[str] = Header(None),
 ):
-    context = {'request': request}
+    posts = get_posts(with_user=True, with_tags=True, with_likes=True, with_comments=True)
+    context = {
+        'request': request,
+        'posts': posts,
+    }
     return templates.TemplateResponse("picstragram/home/index.html", context)
 
 
@@ -938,6 +946,7 @@ async def pic_me(
 ):
     context = {'request': request}
     return templates.TemplateResponse("picstragram/user/me.html", context)
+
 
 @app.get("/picstragram/users/", response_class=HTMLResponse)
 async def pic_users(

@@ -6,50 +6,67 @@
 {% block subtitle %}최신포스트{% endblock subtitle %}
 
 {% block content %}
-    <div class="container">
-        <article class="post">
-            <div class="header">
-                {#<a href="user.html"><img src="images/user1.png" class="profile" alt="사용자1" /></a>#}
-                <a href="{{ url_for('pic_users') }}">
-                    <img src="{{ url_for('static', path='images/user1.png') }}" class="profile" alt="사용자1"/>
-                </a>
-                <a href="{{ url_for('pic_users') }}">
-                    <div class="name">사용자1</div>
-                </a>
-                <div class="time">2분</div>
-            </div>
-            <div class="contents">
-                <img class="img-fluid" alt="100%x250" src="{{ url_for('static', path='images/post-0003.jpeg') }}">
-            </div>
-            <div class="icons">
-                <div class="icons-left">
-                    <i class="bi bi-heart"></i>
-                    <i class="bi bi-chat"></i>
-                    <i class="bi bi-send"></i>
+    {% for post in posts %}
+        <div class="container">
+            <article class="post">
+                <div class="header">
+                    <a href="{{ url_for('pic_users') }}">
+                        {#<img src="{{ url_for('static', path='images/user1.png') }}" class="profile" alt="사용자1"/>#}
+                        {#<img src="{{ url_for('static', path=post.user.image_url) }}" class="profile" alt="사용자1"/>#}
+                        <img src="{{ url_for('uploads', path=post.user.image_url) }}" class="profile" alt="{{post.user.username}}"/>
+                    </a>
+                    <a href="{{ url_for('pic_users') }}">
+                        <div class="name">{{ post.user.username }}</div>
+                    </a>
+                    <div class="time">{{ post.updated_at | feed_time }}</div>
+                    {# https://icons.getbootstrap.com/?q= #}
+                    <div class="header-icons">
+                        <i class="bi bi-pencil"></i>
+                        <i class="bi bi-trash3-fill"></i>
+                    </div>
                 </div>
-                <div class="icons-right">
-                    <i class="bi bi-bookmark"></i>
+                <div class="contents">
+                    {#<img class="img-fluid" alt="100%x250" src="{{ url_for('static', path='images/post-0003.jpeg') }}">#}
+                    {#<img class="img-fluid" alt="100%x250" src="{{ url_for('static', path=post.image_url) }}">#}
+                    <img class="img-fluid" alt="100%x250" src="{{ url_for('uploads', path=post.image_url) }}">
+                    {# 추가 텍스트 post.content + tag #}
+                    <p class="fs-5 mt-3 mb-10 px-4 font1">{{ post.content }}</p>
+                    <div class="d-flex align-items-center gap-2 text-sm mb-5 flex-wrap">
+                        {% for tag in post.tags %}
+                            <a href="{{ url_for('pic_get_tag', tag_id=tag.id) }} "
+                               class="btn btn-sm rounded-pill border-0 px-3 py-1"
+                               style="background-color: #bebebe; color: black; transition: background-color 0.3s, color 0.3s;" onmouseover="this.style.backgroundColor='black'; this.style.color='white';" onmouseout="this.style.backgroundColor='#bebebe'; this.style.color='black';"
+                            >
+                                {{ tag.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-            <div class="comments">
-                <div class="comment">
-                    <div class="name">술잊는마을</div>
-                    <div class="comment">맥주 양조장 다녀오셨나요?</div>
+                <div class="icons">
+                    <div class="icons-left">
+                        <i class="bi bi-heart"></i>
+                        <i class="bi bi-chat"></i>
+                        <i class="bi bi-send"></i>
+                    </div>
+                    <div class="icons-right">
+                        <i class="bi bi-bookmark"></i>
+                    </div>
                 </div>
-                <div class="comment">
-                    <div class="name">덴덴</div>
-                    <div class="comment">안녕하세요. 좀 거 긴 코멘트를 써봐요 글씨가 잘리는 지도 테스트 할겸 할 말 없지만 주저리 주저리...</div>
+                <div class="comments">
+                    {% for comment in post.comments %}
+                        <div class="comment">
+                            <div class="name">{{ comment.user.username }}</div>
+                            <div class="comment">{{ comment.text }}</div>
+                        </div>
+                    {% endfor %}
                 </div>
-                <div class="comment">
-                    <div class="name">또떠님</div>
-                    <div class="comment">저도 가보고 싶은 곳인데 먼저 가보셨군요. 맛은 있으셨는지??</div>
+                <div class="add-comment">
+                    <input type="text" class="form-control" id="comment" placeholder="댓글 달기...">
                 </div>
-            </div>
-            <div class="add-comment">
-                <input type="text" class="form-control" id="comment" placeholder="댓글 달기...">
-            </div>
-        </article>
-    </div>
+            </article>
+        </div>
+    {% endfor %}
+
     <div class="container">
         <article class="post">
             <div class="header">
