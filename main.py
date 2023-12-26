@@ -931,7 +931,7 @@ async def pic_index(
     return templates.TemplateResponse("picstragram/home/index.html", context)
 
 
-@app.get("/picstragram/me", response_class=HTMLResponse)
+@app.get("/picstragram/me/", response_class=HTMLResponse)
 async def pic_me(
         request: Request,
         hx_request: Optional[str] = Header(None),
@@ -939,7 +939,7 @@ async def pic_me(
     context = {'request': request}
     return templates.TemplateResponse("picstragram/user/me.html", context)
 
-@app.get("/picstragram/users", response_class=HTMLResponse)
+@app.get("/picstragram/users/", response_class=HTMLResponse)
 async def pic_users(
         request: Request,
         username: Optional[str] = None,

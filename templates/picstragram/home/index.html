@@ -10,9 +10,10 @@
         <article class="post">
             <div class="header">
                 {#<a href="user.html"><img src="images/user1.png" class="profile" alt="사용자1" /></a>#}
-                <a href="user.html"><img src="{{ url_for('static', path='images/user1.png') }}" class="profile"
-                                         alt="사용자1"/></a>
-                <a href="user.html">
+                <a href="{{ url_for('pic_users') }}">
+                    <img src="{{ url_for('static', path='images/user1.png') }}" class="profile" alt="사용자1"/>
+                </a>
+                <a href="{{ url_for('pic_users') }}">
                     <div class="name">사용자1</div>
                 </a>
                 <div class="time">2분</div>
@@ -53,9 +54,10 @@
         <article class="post">
             <div class="header">
                 {#<a href="user.html"><img src="images/user2.png" class="profile" alt="사용자2" /></a>#}
-                <a href="user.html"><img src="{{ url_for('static', path='images/user2.png') }}" class="profile"
-                                         alt="사용자2"/></a>
-                <a href="user.html">
+                <a href="{{ url_for('pic_users') }}">
+                    <img src="{{ url_for('static', path='images/user2.png') }}" class="profile" alt="사용자2"/>
+                </a>
+                <a href="{{ url_for('pic_users') }}">
                     <div class="name">사용자2</div>
                 </a>
                 <div class="time">1시간</div>
