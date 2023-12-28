@@ -56,6 +56,14 @@
                 // 없으면 htmx-swap 에러가 남 : htmx.org@1.6.1:1 Uncaught TypeError: e.querySelectorAll is not a function
             </script>
             <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+            <!-- hx-swap에 swap:1s 를 달면, transition이 적용되도록-->
+            <style>
+                .htmx-swapping {
+                    opacity: 0;
+                    transition: opacity .5s ease-out;
+                }
+            </style>
+
 
             <!-- Google Fonts -->
             <link rel="preconnect" href="https://fonts.googleapis.com">

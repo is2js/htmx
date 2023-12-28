@@ -1,0 +1,65 @@
+<div class="container" hx-target="this" hx-swap="outerHTML swap:.5s">
+    <article class="post">
+        <div class="header">
+            <a href="{{ url_for('pic_users') }}">
+                <img src="{{ url_for('uploads', path=post.user.image_url) }}" class="profile"
+                     alt="{{ post.user.username }}"/>
+            </a>
+            <a href="{{ url_for('pic_users') }}">
+                <div class="name">{{ post.user.username }}</div>
+            </a>
+            <div class="time">{{ post.updated_at | feed_time }} {% if post.created_at != post.updated_at -%}
+                (수정됨){%- endif %}</div>
+            {# https://icons.getbootstrap.com/?q= #}
+            <div class="header-icons">
+                <a hx-get="{{ url_for('pic_hx_get_edit_form', post_id= post.id ) }}" style="cursor: pointer;">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a hx-delete="{{ url_for('pic_delete_post', post_id= post.id ) }}"
+                   hx-confirm="정말 삭제하시겠습니까?"
+                   style="cursor: pointer;"
+                >
+                    <i class="bi bi-trash3-fill"></i>
+                </a>
+            </div>
+        </div>
+        <div class="contents">
+            <img class="img-fluid" alt="100%x250" src="{{ url_for('uploads', path=post.image_url) }}">
+            {# 추가 텍스트 post.content + tag #}
+            <p class="fs-5 fw-bold mt-3 mb-10 px-4">{{ post.content }}</p>
+            <div class="d-flex align-items-center gap-2 text-sm mb-5 flex-wrap">
+                {% for tag in post.tags %}
+                    <a href="{{ url_for('pic_get_tag', tag_id=tag.id) }} "
+                       class="btn btn-sm rounded-pill border-0 px-3 py-1"
+                       style="background-color: #bebebe; color: black; transition: background-color 0.3s, color 0.3s;"
+                       onmouseover="this.style.backgroundColor='black'; this.style.color='white';"
+                       onmouseout="this.style.backgroundColor='#bebebe'; this.style.color='black';"
+                    >
+                        {{ tag.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="icons">
+            <div class="icons-left">
+                <i class="bi bi-heart"></i>
+                <i class="bi bi-chat"></i>
+                <i class="bi bi-send"></i>
+            </div>
+            <div class="icons-right">
+                <i class="bi bi-bookmark"></i>
+            </div>
+        </div>
+        <div class="comments">
+            {% for comment in post.comments %}
+                <div class="comment">
+                    <div class="name">{{ comment.user.username }}</div>
+                    <div class="comment">{{ comment.text }}</div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="add-comment">
+            <input type="text" class="form-control" id="comment" placeholder="댓글 달기...">
+        </div>
+    </article>
+</div>

@@ -668,10 +668,17 @@ async def pic_get_post(
         request: Request,
         post_id: int,
         response: Response,
+        hx_request: Optional[str] = Header(None)
 ):
-    # post = get_post(post_id, with_user=True, with_comments=True)
-    # post = get_post(post_id, with_user=True, with_comments=True, with_likes=True)
     post = get_post(post_id, with_user=True, with_comments=True, with_likes=True, with_tags=True)
+
+    # edit_form 취소시 개별조회 post를, html과 함께  반환
+    if hx_request:
+        context = {
+            'request': request,
+            'post': post,
+        }
+        return templates.TemplateResponse("picstragram/post/post.html", context)
 
     if post is None:
         response.status_code = 404
@@ -700,20 +707,44 @@ async def pic_update_post(
         request: Request,
         post_id: int,
         response: Response,
-        updated_post_req: UpdatePostReq, # hx-exc="json-enc"로 오는 form
+        updated_post_req: UpdatePostReq,  # hx-exc="json-enc"로 오는 form
         # data: dict = Depends(FormTo(UpdatePostReq)), # 순수 form
+        hx_request: Optional[str] = Header(None)
 ):
     data = updated_post_req.model_dump()
-    print(f"data >> {data}")
-    # data >> {'content': '11'}
 
     try:
-        post = update_post(post_id, data)
-        return post
-
+        update_post(post_id, data)
     except Exception as e:
         response.status_code = 400
         return f"Post 수정에 실패했습니다.: {e}"
+
+    post = get_post(post_id, with_user=True, with_comments=True, with_likes=True, with_tags=True)
+
+    if hx_request:
+        context = {
+            'request': request,
+            'post': post,
+        }
+        return templates.TemplateResponse("picstragram/post/post.html", context)
+
+    return post
+
+
+@app.get("/posts/{post_id}/edit_form/", response_class=HTMLResponse)
+async def pic_hx_get_edit_form(
+        request: Request,
+        post_id: int,
+        response: Response,
+):
+    post = get_post(post_id, with_user=True)
+
+    context = {
+        'request': request,
+        'post': post,
+    }
+
+    return templates.TemplateResponse("picstragram/post/partials/edit_form.html", context)
 
 
 @app.delete("/posts/{post_id}", )
@@ -721,13 +752,22 @@ async def pic_delete_post(
         request: Request,
         post_id: int,
         response: Response,
+        hx_request: Optional[str] = Header(None)
 ):
     try:
         delete_post(post_id)
-        return "Post 삭제에 성공했습니다."
     except Exception as e:
         response.status_code = 400
         return f"Post 삭제에 실패했습니다.: {e}"
+
+    # post 삭제시 빈 html를 반환하여 삭제 처리
+    if hx_request:
+        context = {
+            'request': request
+        }
+        return templates.TemplateResponse("picstragram/_empty.html", context)
+
+    return "Post 삭제에 성공했습니다."
 
 
 ############

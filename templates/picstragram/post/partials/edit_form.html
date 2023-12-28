@@ -1,0 +1,27 @@
+<div class="container" hx-target="this" hx-swap="outerHTML swap:.5s">
+    <article class="post">
+        <div class="contents">
+            <div class="d-flex align-items-center mb-4">
+                <img class="img-fluid me-2"
+                     style="width:20%!important;height: 20%!important;"
+                     alt="100%x250"
+                     src="{{ url_for('uploads', path=post.image_url) }}"
+                >
+                <h5 class="fs-7 fw-bold">{{ post.content }}</h5>
+            </div>
+            <form hx-put="{{ url_for('pic_update_post', post_id=post.id) }}"
+                  hx-ext='json-enc'
+            >
+                <textarea rows="2" class="form-control mt-3 mb-4 px-2"
+                          name="content"
+                          placeholder="수정할 내용 입력">{{ post.content }}</textarea>
+                <div class="d-flex align-items-center gap-2 text-sm mb-5 flex-wrap justify-content-center">
+                    <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3 py-1">수정</button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1"
+                            hx-get="{{ url_for('pic_get_post', post_id=post.id) }}"
+                    >취소</button>
+                </div>
+            </form>
+        </div>
+    </article>
+</div>
