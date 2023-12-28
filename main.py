@@ -5,7 +5,7 @@ import pathlib
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 
-from fastapi import Depends, FastAPI, Header, Request, UploadFile
+from fastapi import Depends, FastAPI, Header, Request, UploadFile, Body, Form
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 
@@ -19,8 +19,10 @@ from starlette.staticfiles import StaticFiles
 
 import models
 from database import SessionLocal, engine
-from schemas.picstagrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema
+from schemas.picstagrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
+    UpdatePostReq
 from schemas.tracks import Track
+from schemas.utils import form_to, FormTo
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 
@@ -697,11 +699,16 @@ async def pic_create_post(
 async def pic_update_post(
         request: Request,
         post_id: int,
-        post_schema: PostSchema,
         response: Response,
+        updated_post_req: UpdatePostReq, # hx-exc="json-enc"로 오는 form
+        # data: dict = Depends(FormTo(UpdatePostReq)), # 순수 form
 ):
+    data = updated_post_req.model_dump()
+    print(f"data >> {data}")
+    # data >> {'content': '11'}
+
     try:
-        post = update_post(post_id, post_schema)
+        post = update_post(post_id, data)
         return post
 
     except Exception as e:

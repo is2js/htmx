@@ -179,23 +179,29 @@ def create_post(post_schema: PostSchema):
     return post_schema
 
 
-def update_post(post_id: int, post_schema: PostSchema):
+# def update_post(post_id: int, post_schema: PostSchema):
+def update_post(post_id: int, data: dict):
     # new) many생성시 one존재여부 검사 필수 -> 없으면 404 에러
-    user = get_user(post_schema.user_id)
-    if not user:
-        raise Exception(f"해당 user(id={post_schema.user_id})가 존재하지 않습니다.")
+    # user = get_user(data.user_id)
+    # if not user:
+    #     raise Exception(f"해당 user(id={post_schema.user_id})가 존재하지 않습니다.")
 
     post = get_post(post_id)
     if not post:
         raise Exception(f"해당 post(id={post_id})가 존재하지 않습니다.")
 
-    # TODO: update Schema가 개발되면 model(**user_schema.model_dump())로 대체
     # -> 지금은 업데이트 허용 필드를 직접 할당함.
-    post.title = post_schema.title
-    post.content = post_schema.content
-    if post_schema.image_url:
-        post.image_url = post_schema.image_url
+    # data = post_schema.model_dump()
+    # post.update(data)
+    # post.title = post_schema.title
+    # post.content = post_schema.content
+    # if post_schema.image_url:
+    #     post.image_url = post_schema.image_url
 
+    for key, value in data.items():
+        setattr(post, key, value)
+
+    # 서버 부여
     post.updated_at = datetime.datetime.now()
 
     return post

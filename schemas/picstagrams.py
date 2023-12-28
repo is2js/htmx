@@ -1,7 +1,9 @@
 import datetime
+import json
 from typing import Optional, List
 
-from pydantic import BaseModel, Field
+from fastapi import Form
+from pydantic import BaseModel, Field, model_validator
 
 
 class UserSchema(BaseModel):
@@ -41,6 +43,20 @@ class PostSchema(BaseModel):
 
     likes: Optional[List['LikeSchema']] = []
     tags: Optional[List['TagSchema']] = []
+
+
+class UpdatePostReq(BaseModel):
+    content: str
+
+    # @classmethod
+    # def __get_validators__(cls):
+    #     yield cls.validate_to_json
+    #
+    # @classmethod
+    # def validate_to_json(cls, value):
+    #     if isinstance(value, str):
+    #         return cls(**json.loads(value))
+    #     return value
 
 
 class LikeSchema(BaseModel):
