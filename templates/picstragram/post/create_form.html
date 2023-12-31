@@ -1,0 +1,14 @@
+{% extends 'picstragram/_page_base.html' %}
+{% import 'macros/_form.html' as _form %}
+
+{% block title %} test {% endblock %}
+{% block content %}
+    {{ _form.preview_input(
+        width='100%',
+        label='내 기기에서 선택',
+        name='file',
+        value='',
+        src=request.url_for("uploads", path="images/post-0001.jpeg")
+        ) }}
+
+{% endblock %}

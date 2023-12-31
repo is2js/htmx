@@ -96,7 +96,19 @@
         return {'filename': file_upload.filename}
     
     ```
-   
+
+### 추가) Preview by #id를 가진 img태그를 두고, type file input의 onchange 속성을 이용
+```html
+<form action="{{ url_for('create_upload_file') }}" method="POST"
+      enctype="multipart/form-data">
+    <input type="file" name="file_upload"
+            onchange="document.getElementById('blah').src = window.URL.createObjectURL(this.files[0])"
+    />
+    <button type="submit">Submit</button>
+    <img src="" alt="" id="blah">
+</form>
+```
+
 ### 여러 파일 받기 -> 단일upload의 backend -> view 순서로 수정
 - [문서](https://fastapi.tiangolo.com/tutorial/request-files/?h=request+files#multiple-file-uploads)를 보면, `list[UploadFile]`로 받을 수 있다고 한다.
 1. route도 `upload_files`로 추가하자

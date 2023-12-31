@@ -10,7 +10,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 
 from fastapi.templating import Jinja2Templates
-from jinja2.nodes import Node
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.middleware.cors import CORSMiddleware
@@ -282,6 +281,15 @@ def get_db():
 async def index(request: Request, response_class=HTMLResponse):
     context = {'request': request}
     return templates.TemplateResponse("index.html", context)
+
+
+@app.get("/test",)
+async def test(
+        request: Request,
+        response: Response,
+):
+    context = {'request': request}
+    return templates.TemplateResponse("picstragram/post/create_form.html", context)
 
 
 ############

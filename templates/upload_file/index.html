@@ -26,6 +26,15 @@
     <input type="file" name="file_upload"/>
     <button type="submit">Submit</button>
 </form>
+<h2>File Upload with onchange preview oneline</h2>
+<form action="{{ url_for('create_upload_file') }}" method="POST"
+      enctype="multipart/form-data">
+    <input type="file" name="file_upload"
+            onchange="document.getElementById('blah').src = window.URL.createObjectURL(this.files[0])"
+    />
+    <button type="submit">Submit</button>
+    <img src="" alt="" id="blah">
+</form>
 
 <h2>Multiple File Upload</h2>
 <form action="{{ url_for('create_upload_file') }}" method="POST"

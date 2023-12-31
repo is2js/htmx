@@ -1,0 +1,285 @@
+{% macro preview_input() %}
+    {% set main_color = kwargs.get('main_color', 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%)') %}
+    {% set width = kwargs.get('width', '430px') %}
+    {% set height = kwargs.get('height', '350px') %}
+
+    {% set label = kwargs.get('label', '내 기기에서 선택') %}
+    {% set name = kwargs.get('name', 'file') %}
+    {% set value = kwargs.get('value', '') %}
+    {% set required = 'required' if kwargs.get('required', False) else '' %}
+    {% set src = kwargs.get('src', '') %}
+
+    <style>
+        .container {
+            width: {{ width }};
+            height: {{ height }};
+        }
+
+        .container .preview-wrapper {
+            width: 100%;
+            height: calc({{ height }} * 0.85);
+            border: 2px dashed #c2cdda;
+            background: #fff;
+
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .preview-wrapper.active {
+            border: none;
+        }
+
+        .preview-wrapper #preview-img {
+            display: {{ 'block' if src else 'none'}};
+        }
+
+        .preview-wrapper .icon {
+            font-size: 100px;
+            color: #c2cdda;
+        }
+
+        .preview-wrapper #cancel-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+
+            font-size: 30px;
+            font-weight: bolder;
+            color: #9658fe;
+            cursor: pointer;
+
+            display: none;
+        }
+
+        .preview-wrapper.active:hover #cancel-btn {
+            display: block;
+        }
+
+        .preview-wrapper #cancel-btn:hover {
+            color: #d74f73;
+        }
+
+        .preview-wrapper .text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #c2cdda;
+        }
+
+        .preview-wrapper .file-name {
+            position: absolute;
+            bottom: 0;
+
+            width: 100%;
+            background: {{ main_color }};
+
+            color: #fff;
+            font-size: 18px;
+            padding: 8px 0;
+
+            display: none;
+        }
+
+        .preview-wrapper.active:hover .file-name {
+            display: block;
+        }
+
+        .container #custom-btn {
+            margin-top: 30px;
+            width: 100%;
+            height: 50px;
+            display: block;
+
+            border: none;
+            outline: none;
+            border-radius: 25px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+
+            cursor: pointer;
+            background: {{ main_color }};
+        }
+    </style>
+
+    <div class="container text-center">
+        <div class="preview-wrapper d-flex justify-content-center align-items-center position-relative">
+            <div class="image position-absolute w-100 h-100">
+                <img id="preview-img" class="w-100 h-100 object-fit-cover" src="{{ src }}" alt="">
+            </div>
+            <div class="content">
+                <div class="icon"><i class="bi bi-cloud-upload-fill"></i></div>
+                <div class="text">사진 혹은 동영상을 여기에 끌어다 놓으세요</div>
+            </div>
+            <div id="cancel-btn"><i class="bi bi-x-circle-fill"></i></div>
+            <div class="file-name">파일 이름 자리</div>
+        </div>
+        <input type="file" id="default-btn" name="{{ name }}" hidden {{ required }} value="{{ value }}">
+        <button id="custom-btn" onclick="defaultBtnActive()">{{ label }}</button>
+    </div>
+
+    <script>
+        const previewWrapperDiv = document.querySelector(".preview-wrapper");
+        const cancelBtn = document.querySelector("#cancel-btn");
+        const defaultBtn = document.querySelector("#default-btn");
+        const customBtn = document.querySelector("#custom-btn");
+        const previewImg = document.querySelector("#preview-img");
+        const filenameDiv = document.querySelector(".file-name");
+        let regExp = /[0-9a-zA-Z가-힣\^\&\'\@\{\}\[\]\,\$\=\!\-\#\(\)\.\%\+\~\_ ]+$/;
+
+
+        const MAX_IMAGE_SIZE_MB = 10;
+        const MAX_VIDEO_SIZE_MB = 500;
+
+        function isValidFileSize(file) {
+            const fileSizeMB = file.size / (1024 * 1024); // Convert to megabytes
+            if (file.type.startsWith('image/') && fileSizeMB > MAX_IMAGE_SIZE_MB) {
+                alert(`이미지는 ${MAX_IMAGE_SIZE_MB}MB 이하의 파일을 업로드 해주세요`);
+                return false;
+
+            } else if (file.type.startsWith('video/') && fileSizeMB > MAX_VIDEO_SIZE_MB) {
+                alert(`비디오는 ${MAX_VIDEO_SIZE_MB}MB 이하의 파일을 업로드 해주세요`);
+                return false;
+            }
+
+            return true;
+        }
+
+        function defaultBtnActive() {
+            defaultBtn.click();
+        }
+
+        defaultBtn.addEventListener("change", function () {
+            const files = this.files;
+            if (files.length <= 0) {
+                return;
+            }
+            const file = files[0];
+            // type & size 검증. 만약 유효하지 않으면 alert + return false;
+            if (!(isValidFileType(file) && isValidFileSize(file))) {
+                return;
+            }
+
+            // 공통메서드로 추출
+            setFileToPreview(file);
+        });
+
+        // drag over/leave
+        previewWrapperDiv.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            previewWrapperDiv.classList.add("active");
+        });
+
+        previewWrapperDiv.addEventListener("dragleave", function (e) {
+            previewWrapperDiv.classList.remove("active");
+        });
+
+        // drop
+        previewWrapperDiv.addEventListener("drop", function (e) {
+            e.preventDefault();
+            // drop시에도 파일을 처리
+            const files = e.dataTransfer.files;
+
+            if (files.length <= 0) {
+                return;
+            }
+            const file = files[0];
+
+            // type & size 검증. 만약 유효하지 않으면 alert + return false;
+            if (!(isValidFileType(file) && isValidFileSize(file))) {
+                return;
+            }
+
+            // 공통메서드로 추출
+            setFileToPreview(file);
+        });
+
+        // 이미지 or 비디오
+        function isValidFileType(file) {
+            var splitType = file.type.split('/')[0]
+            // if(type == 'application/pdf' || splitType == 'image' || splitType == 'video'){
+            if (splitType == 'image' || splitType == 'video') {
+                return true
+            }
+            alert('사진 혹은 동영상 파일만 업로드 가능합니다.');
+            return false
+        }
+
+        // 비디오에서 이미지추출 by video태그 preload + canplay -> canvas태그 -> previewImg
+        function setVideoThumbnailToPreview(videoDataURL) {
+            // 1) 비디오 태그를 생성해놓고, src입력 + 음소거 + 재생가능상태로 만든다.
+            const video = document.createElement('video');
+            video.src = videoDataURL;
+            video.muted = true;
+            video.preload = "auto"; // 필수) 전체load대신, 재생가능 상태로 만들어서 on canplay 이벤트가 가능해짐.
+
+
+            // 2) 재생가능시 이벤트리스너를 걸어서, canvas태그를 만들어, 이미지를 그린다.
+            //    그린 이미지를 previewImg에 넣고 + FileReader가 읽은 URL를 revoke시킨다.
+            video.addEventListener('canplay', function () {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Draw the first frame of the video on the canvas
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert the canvas content to a data URL (thumbnail)
+                const thumbnailDataURL = canvas.toDataURL();
+
+                // Set the thumbnail as the source of the preview image
+                previewImg.src = thumbnailDataURL;
+                previewImg.style.display = "block";
+                previewWrapperDiv.classList.add("active");
+
+                // canvas 삭제
+                canvas.remove();
+
+                // Clean up resources + video 삭제
+                URL.revokeObjectURL(video.src);
+                video.remove();
+            });
+        }
+
+        function setFileToPreview(file) {
+            if (file && isValidFileType(file)) {
+
+                const reader = new FileReader();
+
+                reader.onload = function () {
+                    let result = reader.result;
+
+                    if (file.type.startsWith('video')) {
+                        setVideoThumbnailToPreview(result);
+                    } else {
+                        previewImg.src = result;
+                        previewImg.style.display = "block";
+                        previewWrapperDiv.classList.add("active");
+                    }
+                }
+
+                cancelBtn.addEventListener("click", function () {
+                    previewImg.src = "";
+                    previewImg.style.display = "none";
+
+                    previewWrapperDiv.classList.remove("active");
+
+                    defaultBtn.value = ""; // input[type="file"] 속 file 초기화
+                });
+
+                reader.readAsDataURL(file);
+            }
+
+            // const fileName = this.value;
+            const fileName = file.name;
+            if (fileName) {
+                filenameDiv.textContent = fileName.match(regExp);
+            }
+        }
+
+
+    </script>
+{% endmacro %}
