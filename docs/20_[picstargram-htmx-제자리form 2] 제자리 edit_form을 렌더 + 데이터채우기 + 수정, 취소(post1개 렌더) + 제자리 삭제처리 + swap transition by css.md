@@ -31,7 +31,7 @@
      
         {% block content %}
             {% for post in posts %}
-                <div class="container" hx-target="this" hx-swap="outerHTML">
+                <div class="preview-container" hx-target="this" hx-swap="outerHTML">
                     <article class="post">
                         <div class="header">
                             <div class="header-icons">
@@ -52,7 +52,7 @@
 
 4. 이제 route에서 넘겨준 post데이터를 이용해, edit_form.html의 고정데이터를 동적데이터로 바꿔준다.
     ```html
-        <div class="container">
+        <div class="preview-container">
             <article class="post">
                 <div class="contents">
                     <div class="d-flex align-items-center mb-4">
@@ -140,7 +140,7 @@
 
     5. edit_form.html에서도 `hx-target="this"`를 container에 걸어서, 최상위 태그가 hx-swap되게 한다.
         ```html
-        <div class="container" hx-target="this" hx-swap="outerHTML">
+        <div class="preview-container" hx-target="this" hx-swap="outerHTML">
         ```
 
 ### 취소는 현재 post 1개 그대로 반환하는 처리를 [개별조회 get_route]에서 hx_request확인하여 반환하자.
@@ -256,8 +256,8 @@ async def pic_get_post(
 2. hx-swap="종류 swap:1s" 형태로 `swap:Xs`를 걸면, 자동으로 적용된다.
     - post.html의 최상위태그 + edit_form.html의 최상위태그의 hx-swap에 모두 적용시켜줬따.
     ```html
-    <div class="container" hx-target="this" hx-swap="outerHTML swap:.5s">
+    <div class="preview-container" hx-target="this" hx-swap="outerHTML swap:.5s">
     ```
     ```html
-    <div class="container" hx-target="this" hx-swap="outerHTML swap:.5s">
+    <div class="preview-container" hx-target="this" hx-swap="outerHTML swap:.5s">
     ```

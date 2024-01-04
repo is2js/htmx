@@ -62,7 +62,7 @@ async def test(
     {% block title %} test {% endblock %}
     
     {% block content %}
-        <div class="container">
+        <div class="preview-container">
             <div class="wrapper">
                 
             </div>
@@ -100,12 +100,12 @@ async def test(
     ```html
     
     <style>
-        .container {
+        .preview-container {
             width: 430px;
             height: 350px;
         }
     
-        .container .wrapper {
+        .preview-container .wrapper {
             width: 100%;
             height: 300px;
             border: 2px dashed #c2cdda;
@@ -116,7 +116,7 @@ async def test(
    ![img.png](../images/60.png)
 5. 드래그영역 .wrapper가 모서리를 둥글게 하되, .image가 100%로 채울 예정이므로, overflow-hidden도 같이 준다.
     ```css
-    .container .wrapper {
+    .preview-container .wrapper {
         width: 100%;
         height: 300px;
         border: 2px dashed #c2cdda;
@@ -201,7 +201,7 @@ async def test(
     <input type="file" id="default-btn" hidden>
     ```
     ```css
-    .container #custom-btn {
+    .preview-container #custom-btn {
         margin-top: 30px;
         width: 100%;
         height: 50px;

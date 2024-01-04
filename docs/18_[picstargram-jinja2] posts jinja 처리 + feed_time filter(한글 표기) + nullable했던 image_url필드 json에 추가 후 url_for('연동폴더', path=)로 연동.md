@@ -4,7 +4,7 @@
     ```html
     {% block content %}
         {{ posts }}
-        <div class="container">
+        <div class="preview-container">
             <article class="post">
                 <div class="header">
     ```
@@ -39,7 +39,7 @@
     ```    
     ```html
     {% for post in posts %}
-        <div class="container">
+        <div class="preview-container">
             <article class="post">
                 <div class="header">
                     <a href="{{ url_for('pic_users') }}">

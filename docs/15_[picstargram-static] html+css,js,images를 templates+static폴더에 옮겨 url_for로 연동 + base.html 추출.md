@@ -134,9 +134,9 @@
        {% extends 'picstragram/_page_base.html' %}
     
        {% block content %}
-           <div class="container">
+           <div class="preview-container">
            </div>
-           <div class="container">
+           <div class="preview-container">
            </div>
        {% endblock content %}
        ```
