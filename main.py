@@ -5,7 +5,7 @@ import pathlib
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 
-from fastapi import Depends, FastAPI, Header, Request, UploadFile, Body, Form
+from fastapi import Depends, FastAPI, Header, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 
@@ -19,7 +19,7 @@ from starlette.staticfiles import StaticFiles
 import models
 from database import SessionLocal, engine
 from schemas.picstagrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq
+    UpdatePostReq, TagCreateReq, PostCreateReq
 from schemas.tracks import Track
 from schemas.utils import form_to, FormTo
 from templatefilters import feed_time
@@ -283,12 +283,56 @@ async def index(request: Request, response_class=HTMLResponse):
     return templates.TemplateResponse("index.html", context)
 
 
-@app.get("/test",)
+@app.get("/test", )
 async def test(
         request: Request,
         response: Response,
 ):
     context = {'request': request}
+    return templates.TemplateResponse("picstragram/post/create_form.html", context)
+
+
+@app.post("/test/post", )
+async def test_post(
+        request: Request,
+        response: Response,
+        # body: bytes = Body(...),
+        # content: str = Form(...),
+        # tags: str = Form(...),
+        post_create_req: PostCreateReq = Depends(PostCreateReq.as_form),
+        # post_create_req: PostCreateReq,
+        file: Union[UploadFile, None] = None
+):
+    # as_form 반영 전 -> 파라미터에서 따로 받을 수 있음.
+    print(f"file  >> {file}")
+    # file  >> <starlette.datastructures.UploadFile object at 0x0000018A11E84C40>
+    # post_create_req  >> content='a' tags=[TagCreateReq(name='a'), TagCreateReq(name='b'), TagCreateReq(name='c')]
+
+    # as_form 반영 후 -> post_creat_req에서 필드로서 받음.
+    
+    # print(f"content >> {content}")
+    # print(f"tags >> {tags}")
+    # body >> b'file=&body=asdf&tags=%5B%7B%22value%22%3A%22a%22%7D%2C%7B%22value%22%3A%22b%22%7D%2C%7B%22value%22%3A%22c%22%7D%5D'
+    context = {'request': request}
+    # print(f"tags >> {tags}")
+    print(f"post_create_req  >> {post_create_req}")
+
+    # post_create_req >> content='a' tags=[TagCreateReq(name='a'), TagCreateReq(name='b'), TagCreateReq(name='c')]
+    # body >> b'file=&body=sadf&tags=%5B%7B%22name%22%3A%22a%22%7D%2C%7B%22name%22%3A%22b%22%7D%2C%7B%22name%22%3A%22c%22%7D%5D'
+    # body >> b'file=&body=asdafas&tags=%5Bobject+Object%5D%2C%5Bobject+Object%5D%2C%5Bobject+Object%5D'
+
+    # body >> {'file': [], 'body': 'a', 'tags': '[object Object],[object Object],[object Object],[object Object]'}
+    # tags = body['tags']
+    # print(f"json.loads(tags) >> {json.loads(tags)}")
+    # json.loads(tags) >> [{'name': 'a', 'value': 'a'}, {'name': 'b', 'value': 'b'}, {'name': 'c', 'value': 'c'}]
+
+    # json.loads(tags) >> [{'name': 'a', 'value': 'a'}, {'name': 'b', 'value': 'b'}, {'name': 'c', 'value': 'c'}]
+
+    # print(f"post_create_req >> {post_create_req}")
+
+    # originalInputValueFormat: valuesArr => JSON.stringify(valuesArr.map(item => { return {name: item.value}})),
+    # body >> {'file': [], 'body': 'ㅁㄴ', 'tags': '[{"name":"a"},{"name":"b"},{"name":"c"}]'}
+
     return templates.TemplateResponse("picstragram/post/create_form.html", context)
 
 

@@ -11,7 +11,7 @@
         - 수정은 post.content만 할 예정이다. textarea + rows="2"정도로 만들어준다.
         - `수정`과 `취소` button을 개설해놓는다.
     ```html
-    <div class="preview-container">
+    <div class="container">
         <article class="post">
             <div class="contents">
                 <div class="d-flex align-items-center mb-4">

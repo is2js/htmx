@@ -124,7 +124,7 @@
     {% block title %} test {% endblock %}
     {% block content %}
         <form style="">
-            <div class="container">
+            <div class="preview-container">
     
                 {#        src=request.url_for("uploads", path="images/post-0001.jpeg"),#}
                 {{ _form.preview_input(
@@ -278,5 +278,5 @@
 
 6. **form에서 전송할거면 `input태그에 hidden 속성`을 추가하라고 한다.**
     - 또한, view에서는 `readonly` 속성을 넣어서 나중에 view용으로 사용하면 될 듯하다?
-    - **또한, 기본 input태그.value의 값이 [{"value":"1"},{"value":"2"},{"value":"3"},{"value":"4"}]`형태로 가기 때문에 `Schema의 name필드에 = Field(alias='value')`를 사용할 생각을 미리 해야한다.**
- 
+    - **또한, 기본 input태그.value의 값이 `[{"value":"1"},{"value":"2"},{"value":"3"},{"value":"4"}]`형태로 가기 때문에 `Schema의 name필드에 = Field(alias='value')`를 사용할 생각을 미리 해야한다.**
+    

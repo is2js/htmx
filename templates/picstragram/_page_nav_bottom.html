@@ -28,7 +28,8 @@
                 <path d="m6.94 7.44 4.95-2.83-2.83 4.95-4.949 2.83 2.828-4.95z"/>
             </svg>
         </li>
-        <li data-bs-toggle="modal" data-bs-target="#postModal">
+        {#<li data-bs-toggle="modal" data-bs-target="#postModal">#}
+        <li hx-get="{{ url_for('pic_hx_form_post_create') }}" hx-target="#dialog">
             <!-- selected
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-square-fill" viewBox="0 0 16 16">
               <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z"/>
@@ -61,36 +62,3 @@
     </ul>
 </header>
 
-
-<!-- Modal -->
-<div class="modal modal-blur fade" id="postModal" tabindex="-1" aria-labelledby="postModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="postModalLabel">새 게시물 만들기</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <div style="font-size: 10em">
-                    <svg style="width: 1em; height: 1em" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                         fill="#cccccc" class="bi bi-image-fill" viewBox="0 0 16 16">
-                        <path d="M.002 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2V3zm1 9v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12zm5-6.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0z"></path>
-                    </svg>
-                </div>
-                <p>사진과 동영상을 여기에 끌어다 놓으세요</p>
-                <button class="btn btn-sm btn-primary">컴퓨터에서 선택</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="notsupportedModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body text-center">
-                <p>아직 지원하지 않는 기능입니다</p>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">확인</button>
-            </div>
-        </div>
-    </div>
-</div>

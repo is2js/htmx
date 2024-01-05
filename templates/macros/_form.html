@@ -1,18 +1,18 @@
 {% macro inline_preview_input() %}
-    {% set main_color = kwargs.get('main_color', 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%)') %}
-    {% set width = kwargs.get('width', '100%;max-width: 500px;') %}
-    {% set height = kwargs.get('height', '350px') %}
-
-    {% set label = kwargs.get('label', '내 기기에서 선택') %}
-    {% set name = kwargs.get('name', 'file') %}
-    {% set value = kwargs.get('value', '') %}
-    {% set required = 'required' if kwargs.get('required', False) else '' %}
-    {% set src = kwargs.get('src', '') %}
-
-    {% set _class = kwargs.get('_class', '') %}
-    {% set btn_class = kwargs.get('btn_class', '') %}
-
-
+    {%- set main_color = kwargs.get('main_color', 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%)') -%}
+    {%- set width = kwargs.get('width', '100%;max-width: 500px;') -%}
+    {%- set height = kwargs.get('height', '350px') -%}
+    {%- set label = kwargs.get('label', '내 기기에서 선택') -%}
+    {%- set name = kwargs.get('name', 'file') -%}
+    {%- set value = kwargs.get('value', '') -%}
+    {%- set required = 'required' if kwargs.get('required', False) else '' -%}
+    {%- set src = kwargs.get('src', '') -%}
+    {%- set _class = kwargs.get('_class', '') -%}
+    {%- set preview_div_class = kwargs.get('preview_div_class', '') -%}
+    {%- set content_div_class = kwargs.get('content_div_class', '') -%}
+    {%- set btn_class = kwargs.get('btn_class', '') -%}
+    {%- set btn_height = kwargs.get('btn_height', '50px;') -%}
+    {%- set btn_font_color = kwargs.get('btn_font_color', '#fff;') -%}
     <style>
         .preview-container {
             width: {{ width }};
@@ -90,13 +90,13 @@
         .preview-container #custom-btn {
             margin-top: {{ btn_margin_top }};
             width: 100%;
-            height: 50px;
+            height: {{ btn_height }};
             display: block;
 
             border: none;
             outline: none;
             border-radius: 25px;
-            color: #fff;
+            color: {{ btn_font_color }};
             font-size: 18px;
             font-weight: 500;
             letter-spacing: 1px;
@@ -109,10 +109,10 @@
 
     <div class="preview-container mx-auto text-center form-group  {{ _class }}">
         <div class="preview-wrapper d-flex justify-content-center align-items-center position-relative">
-            <div class="image position-absolute w-100 h-100">
+            <div class="image position-absolute w-100 h-100 {{ preview_div_class }}">
                 <img id="preview-img" class="w-100 h-100 object-fit-cover" src="{{ src }}" alt="">
             </div>
-            <div class="content">
+            <div class="content {{ content_div_class }}">
                 <div class="icon"><i class="bi bi-cloud-upload-fill"></i></div>
                 <div class="text">사진 혹은 동영상을 여기에 끌어다 놓으세요</div>
             </div>
@@ -120,24 +120,25 @@
             <div class="file-name">파일 이름 자리</div>
         </div>
         <input type="file" id="default-btn" name="{{ name }}" hidden {{ required }} value="{{ value }}">
-        <button id="custom-btn" class="btn btn-sm {{ btn_class }}" onclick="defaultBtnActive()">{{ label }}</button>
+        <button type="button" id="custom-btn" class="btn btn-sm {{ btn_class }}"
+                onclick="defaultBtnActive()">{{ label }}</button>
     </div>
 
     <script>
-        const previewWrapperDiv = document.querySelector(".preview-wrapper");
-        const cancelBtn = document.querySelector("#cancel-btn");
-        const defaultBtn = document.querySelector("#default-btn");
-        const customBtn = document.querySelector("#custom-btn");
-        const previewImg = document.querySelector("#preview-img");
-        const filenameDiv = document.querySelector(".file-name");
-        let regExp = /[0-9a-zA-Z가-힣\^\&\'\@\{\}\[\]\,\$\=\!\-\#\(\)\.\%\+\~\_ ]+$/;
+        var previewWrapperDiv = document.querySelector(".preview-wrapper");
+        var cancelBtn = document.querySelector("#cancel-btn");
+        var defaultBtn = document.querySelector("#default-btn");
+        var customBtn = document.querySelector("#custom-btn");
+        var previewImg = document.querySelector("#preview-img");
+        var filenameDiv = document.querySelector(".file-name");
+        var regExp = /[0-9a-zA-Z가-힣\^\&\'\@\{\}\[\]\,\$\=\!\-\#\(\)\.\%\+\~\_ ]+$/;
 
 
-        const MAX_IMAGE_SIZE_MB = 10;
-        const MAX_VIDEO_SIZE_MB = 500;
+        var MAX_IMAGE_SIZE_MB = 10;
+        var MAX_VIDEO_SIZE_MB = 500;
 
         function isValidFileSize(file) {
-            const fileSizeMB = file.size / (1024 * 1024); // Convert to megabytes
+            var fileSizeMB = file.size / (1024 * 1024); // Convert to megabytes
             if (file.type.startsWith('image/') && fileSizeMB > MAX_IMAGE_SIZE_MB) {
                 alert(`이미지는 ${MAX_IMAGE_SIZE_MB}MB 이하의 파일을 업로드 해주세요`);
                 return false;
@@ -155,11 +156,11 @@
         }
 
         defaultBtn.addEventListener("change", function () {
-            const files = this.files;
+            var files = this.files;
             if (files.length <= 0) {
                 return;
             }
-            const file = files[0];
+            var file = files[0];
             // type & size 검증. 만약 유효하지 않으면 alert + return false;
             if (!(isValidFileType(file) && isValidFileSize(file))) {
                 return;
@@ -183,12 +184,12 @@
         previewWrapperDiv.addEventListener("drop", function (e) {
             e.preventDefault();
             // drop시에도 파일을 처리
-            const files = e.dataTransfer.files;
+            var files = e.dataTransfer.files;
 
             if (files.length <= 0) {
                 return;
             }
-            const file = files[0];
+            var file = files[0];
 
             // type & size 검증. 만약 유효하지 않으면 alert + return false;
             if (!(isValidFileType(file) && isValidFileSize(file))) {
@@ -203,7 +204,7 @@
         function isValidFileType(file) {
             var splitType = file.type.split('/')[0]
             // if(type == 'application/pdf' || splitType == 'image' || splitType == 'video'){
-            if (splitType == 'image' || splitType == 'video') {
+            if (splitType === 'image' || splitType === 'video') {
                 return true
             }
             alert('사진 혹은 동영상 파일만 업로드 가능합니다.');
@@ -213,7 +214,7 @@
         // 비디오에서 이미지추출 by video태그 preload + canplay -> canvas태그 -> previewImg
         function setVideoThumbnailToPreview(videoDataURL) {
             // 1) 비디오 태그를 생성해놓고, src입력 + 음소거 + 재생가능상태로 만든다.
-            const video = document.createElement('video');
+            var video = document.createElement('video');
             video.src = videoDataURL;
             video.muted = true;
             video.preload = "auto"; // 필수) 전체load대신, 재생가능 상태로 만들어서 on canplay 이벤트가 가능해짐.
@@ -222,8 +223,8 @@
             // 2) 재생가능시 이벤트리스너를 걸어서, canvas태그를 만들어, 이미지를 그린다.
             //    그린 이미지를 previewImg에 넣고 + FileReader가 읽은 URL를 revoke시킨다.
             video.addEventListener('canplay', function () {
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
+                var canvas = document.createElement('canvas');
+                var context = canvas.getContext('2d');
 
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
@@ -232,7 +233,7 @@
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
                 // Convert the canvas content to a data URL (thumbnail)
-                const thumbnailDataURL = canvas.toDataURL();
+                var thumbnailDataURL = canvas.toDataURL();
 
                 // Set the thumbnail as the source of the preview image
                 previewImg.src = thumbnailDataURL;
@@ -251,10 +252,10 @@
         function setFileToPreview(file) {
             if (file && isValidFileType(file)) {
 
-                const reader = new FileReader();
+                var reader = new FileReader();
 
                 reader.onload = function () {
-                    let result = reader.result;
+                    var result = reader.result;
 
                     if (file.type.startsWith('video')) {
                         setVideoThumbnailToPreview(result);
@@ -277,8 +278,8 @@
                 reader.readAsDataURL(file);
             }
 
-            // const fileName = this.value;
-            const fileName = file.name;
+            // var fileName = this.value;
+            var fileName = file.name;
             if (fileName) {
                 filenameDiv.textContent = fileName.match(regExp);
             }
@@ -291,46 +292,210 @@
 
 
 {% macro inline_textarea() %}
-    {% set bg_color = kwargs.get('bg_color', '#e8f0fe') %}
-    {% set width = kwargs.get('width', '100%;max-width: 500px;') %}
+    {%- set bg_color = kwargs.get('bg_color', '#e8f0fe') -%}
+    {%- set width = kwargs.get('width', '100%;max-width: 500px;') -%}
+    {%- set label = kwargs.get('label', '내용') -%}
+    {%- set label_class = kwargs.get('label_class', '') -%}
+    {%- set name = kwargs.get('name', 'body') -%}
+    {%- set value = kwargs.get('value', '') -%}
+    {%- set required = 'required' if kwargs.get('required', False) else '' -%}
+    {%- set _class = kwargs.get('_class', '') -%}
+    {%- set input_class = kwargs.get('input_class', '') -%}
+    {%- set two_col_size = kwargs.get('two_col_size', 'md') -%}
 
-    {% set label = kwargs.get('label', '내용') %}
-    {% set label_class = kwargs.get('label_class', '') %}
-    {% set name = kwargs.get('name', 'body') %}
-    {% set value = kwargs.get('value', '') %}
-    {% set required = 'required' if kwargs.get('required', False) else '' %}
+    <style>
+        .body-container {
+            width: {{ width }};
+            display: flex;
+            align-items: center;
+        }
 
-    {% set _class = kwargs.get('_class', '') %}
-    {% set two_col_size = kwargs.get('two_col_size', 'md') %}
-
-                <style>
-                .body-container {
-                    width: {{ width }};
-                    display: flex;
-                    align-items: center;
-                }
-
-                .body-container textarea {
-                    border-radius: 0.5rem;
-                    padding: 1rem 1.2rem;
-                    margin: 0.5rem 0;
-                    background-color: {{ bg_color }};
-                    border: {{ bg_color }};
-                    resize: vertical;
-                }
-            </style>
-            <div class="body-container mx-auto text-center form-group row">
-                <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-2 col-form-label fw-bold {{ label_class }}">
-                    {{- label +': ' -}}
-                </label>
-                <div class="col-{{ two_col_size }}-10">
-                    <textarea rows="3" cols="5"
-                              class="form-control {{ _class }}"
-                              name="{{ name }}"
-                              placeholder="{{label}}을 입력하세요."
-                              {{ required }}>
-                    {{- value -}}</textarea>
-                </div>
-            </div>
+        .body-container textarea[name="{{name}}"] {
+            border-radius: 0.5rem;
+            padding: 1rem 1.2rem;
+            margin: 0.5rem 0;
+            background-color: {{ bg_color }};
+            border: {{ bg_color }};
+            resize: vertical;
+        }
+    </style>
+    <div class="body-container mx-auto text-center form-group row {{ _class }}">
+        <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-2 col-form-label fw-bold {{ label_class }}">
+            {{- label +': ' -}}
+        </label>
+        <div class="col-{{ two_col_size }}-10">
+            <textarea rows="3" cols="5"
+                      class="form-control {{ input_class }}"
+                      name="{{ name }}"
+                      placeholder="{{ label }}을 입력하세요."
+                    {{ required }}>
+            {{- value -}}</textarea>
+        </div>
+    </div>
 
 {% endmacro %}
+
+{% macro inline_tags() -%}
+    {%- set bg_color = kwargs.get('bg_color', '#e8f0fe') -%}
+    {%- set text_color = kwargs.get('text_color', 'black') -%}
+    {%- set width = kwargs.get('width', '100%;max-width: 500px;') -%}
+    {%- set label = kwargs.get('label', '내용') -%}
+    {%- set label_class = kwargs.get('label_class', '') -%}
+    {%- set name = kwargs.get('name', 'tags') -%}
+    {%- set default_tag_names = kwargs.get('default_tag_names', '') -%}
+    {%- set white_tag_names = kwargs.get('white_tag_names', '[]') -%}
+    {%- set _class = kwargs.get('_class', 'mb-5') -%}
+    {%- set input_class = kwargs.get('input_class', '') -%}
+    {%- set two_col_size = kwargs.get('two_col_size', 'md') -%}
+
+
+    <style>
+        .tag-container {
+            width: {{ width }};
+            display: flex;
+            align-items: center;
+        }
+
+        .tag-container input[name='{{name}}'] {
+            width: 100%;
+        }
+
+        .custom-tags {
+            border: none;
+            font-weight: bold;
+            --tag-bg: {{ bg_color }};
+            --tag-hover: var(--tag-bg);
+            --tags-border-color: var(--tag-bg);
+            --tag-text-color: {{ text_color }};
+            --tag-remove-btn-bg--hover: var(--tag-text-color);
+            --tag-inset-shadow-size: 1.3em;
+        }
+    </style>
+
+    <div class="tag-container mx-auto text-center form-group row {{ _class }}">
+        <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-2 col-form-label fw-bold {{ label_class }}">
+            {{- label +': ' -}}
+        </label>
+        <div class="col-{{ two_col_size }}-10">
+            <input hidden name="{{ name }}"
+                   class="custom-tags form-control form-control-sm form-control-solid {{ input_class }}"
+                   placeholder="{{ label }}를 입력해주세요."
+                   value="{{ default_tag_names | default('') }}"
+            >
+        </div>
+    </div>
+    <script>
+        var tagsInput = document.querySelector('input[name="{{name}}"]');
+        // init Tagify script on the above
+        //{#data = JSON.parse({{countries | tojson}})#}
+        var whitelist = JSON.parse({{ white_tag_names | default('[]')| tojson }});
+        var tagify = new Tagify(tagsInput, {
+            whitelist: whitelist,
+        });
+
+        // Chainable event listeners
+        tagify.on('add', onAddTag)
+            .on('remove', onRemoveTag)
+            .on('input', onInput)
+            .on('invalid', onInvalidTag)
+
+        // tag added callback
+        function onAddTag(e) {
+            console.log("onAddTag: ", e.detail);
+            console.log("original input value: ", tagsInput.value)
+            //tagify.off('add', onAddTag) // exmaple of removing a custom Tagify event
+        }
+
+        // tag remvoed callback
+        function onRemoveTag(e) {
+            console.log(e.detail);
+            console.log("tagify instance value:", tagify.value)
+        }
+
+        // on character(s) added/removed (user is typing/devaring)
+        function onInput(e) {
+            console.log(e.detail);
+            console.log("onInput: ", e.detail);
+        }
+
+        // invalid tag added callback
+        function onInvalidTag(e) {
+            console.log("onInvalidTag: ", e.detail);
+        }
+    </script>
+{%- endmacro %}
+
+
+{% macro submit_btn() -%}
+    {%- set width = kwargs.get('width', '100%;max-width: 500px;') -%}
+    {%- set justify_content = kwargs.get('justify_content', 'end;') -%}
+    {%- set btn_width = kwargs.get('btn_width', 'auto;max-width: 200px;') -%}
+    {%- set btn_height = kwargs.get('btn_height', '50px;') -%}
+    {%- set btn_class = kwargs.get('btn_class', 'fs-6 mt-3') -%}
+    {%- set btn_size = kwargs.get('btn_size', 'sm') -%}
+    {%- set btn_bg_color = kwargs.get('btn_bg_color', 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%);') -%}
+    {%- set btn_text = kwargs.get(btn_text, '게시하기') -%}
+    {%- set btn_font_color = kwargs.get('btn_font_color', '#fff;') -%}
+    {%- set has_cancel_btn = kwargs.get('has_cancel_btn', False) -%}
+    {%- set btn_gap = kwargs.get('btn_gap', '3') -%}
+    {%- set cancel_btn_text = kwargs.get('cancel_btn_text', '취소') -%}
+    {%- set cancel_btn_bg_color = kwargs.get('cancel_btn_bg_color', '#fff') -%}
+    {%- set cancel_btn_font_color = kwargs.get('cancel_btn_font_color', 'black') -%}
+
+    <style>
+        .submit-container {
+            width: {{ width }};
+            display: flex;
+            align-items: center;
+            justify-content: {{ justify_content }};
+        }
+
+        .submit-container > button {
+            width: {{ btn_width }};
+            height: {{ btn_height }};
+            outline: none;
+            font-size: 18px;
+            font-weight: 500;
+            varter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+
+            transition: background-color 0.2s, color 0.2s, border 0.2s;
+        }
+
+        .submit-container > button:nth-child(1) {
+            border: none;
+            background: {{ btn_bg_color }};
+            color: {{ btn_font_color }};
+        }
+
+        .submit-container > button:nth-child(1):hover {
+            background: #e8f0fe;
+            color: black;
+            font-weight: bold;
+        }
+
+        .submit-container > button:nth-child(2) {
+            background: {{ cancel_btn_bg_color }};
+            color: {{ cancel_btn_font_color }};
+            border: 1px solid black;
+        }
+
+        .submit-container > button:nth-child(2):hover {
+            border: none;
+            background: {{ cancel_btn_font_color }};
+            color: {{ cancel_btn_bg_color }};
+        }
+    </style>
+    <div class="submit-container mx-auto text-center gap-{{ btn_gap }} text-sm">
+        <button type="submit"
+                class="btn btn-{{ btn_size }} rounded-pill px-3 py-1 {{ btn_class }}"
+        >{{- btn_text -}}</button>
+        {% if has_cancel_btn %}
+            <button type="button"
+                    class="btn btn-{{ btn_size }} rounded-pill border-0 px-3 py-1 {{ btn_class }}"
+                    data-bs-dismiss="modal"
+            >{{- cancel_btn_text -}}</button>
+        {% endif %}
+    </div>
+{%- endmacro %}

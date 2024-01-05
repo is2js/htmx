@@ -1,9 +1,10 @@
 import datetime
 import json
-from typing import Optional, List
+from inspect import signature
+from typing import Optional, List, Any, Type, Union
 
-from fastapi import Form
-from pydantic import BaseModel, Field, model_validator
+from fastapi import Form, Depends, HTTPException, UploadFile
+from pydantic import BaseModel, Field, model_validator, validator, field_validator, create_model, ValidationError
 
 
 class UserSchema(BaseModel):
@@ -31,7 +32,7 @@ class CommentSchema(BaseModel):
 
 class PostSchema(BaseModel):
     id: Optional[int] = None
-    title: str
+    # title: str
     content: str
     image_url: Optional[str] = None
     created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
@@ -43,6 +44,59 @@ class PostSchema(BaseModel):
 
     likes: Optional[List['LikeSchema']] = []
     tags: Optional[List['TagSchema']] = []
+
+
+class TagCreateReq(BaseModel):
+    # value (input[name=""]) -> name (Schmea-field)
+    name: str = Field(alias='value')
+
+
+class PostCreateReq(BaseModel):
+    # content: str
+    content: str
+
+    # image_url: Optional[str] = None
+    # image_url: Optional[str] = None
+    # created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    # updated_at: Optional[datetime.datetime]
+    # user_id: int
+
+    # user: Optional[UserSchema] = None
+    tags: Optional[List[TagCreateReq]]
+
+    @classmethod
+    def as_form(
+            cls,
+            content: str = Form(...),
+            tags: str = Form(None),
+    ):
+        # obj array [string] to dict list [python]
+        if tags:
+            tags = json.loads(tags)
+
+        return cls(content=content, tags=tags)
+
+    # @field_validator('tags', mode="before")
+    # @classmethod
+    # def from_literal(cls, data: Any) -> Any:
+    #     """Automatically parse '[]' literals
+    #     여기서는 input[name='tags'].value로 넘어오는 '[{"value":"1"},{"value":"2"},{"value":"3"},{"value":"4"}]의 string을
+    #     json.loads()를 통해, json object list로 변환 => 그 이후 schema의 tags에 list로 입력된다.
+    #     """
+    #     if isinstance(data, str):
+    #         # data >> [{"value":"a"},{"value":"b"},{"value":"c"}]
+    #         # type(data)  >> <class 'str'>
+    #         converted_data = json.loads(data)
+    #         # converted_data  >> [{'value': 'a'}, {'value': 'b'}, {'value': 'c'}]
+    #         # t  >> <class 'list'>
+    #
+    #         return converted_data
+
+    #     assert data.count("|") == 1, "literal requires one | separator"
+    #     x, y = data.split("|")
+    #     # field type conversion can be handled by pydantic
+    #     return dict(x=x, y=y)
+    # return data
 
 
 class UpdatePostReq(BaseModel):

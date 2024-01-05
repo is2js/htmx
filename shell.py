@@ -1,25 +1,34 @@
-from IPython import embed
+from shellplus import start_ipython, import_target, import_folder
 
-# TODO: 자신의 Base객체 및, session객체 생성 경로
-from database import Base, SessionLocal
-
-banner = 'Additional imports:\n'
-
-# TODO: 자신의 app객체 경로
-from main import app
-banner = f'{banner}from app.main import app\n'
-
-for clzz in Base.registry._class_registry.values():
-    if hasattr(clzz, '__tablename__'):
-        globals()[clzz.__name__] = clzz
-        import_string = f'from {clzz.__module__} import {clzz.__name__}\n'
-        banner = banner + import_string
-
-#### custom import 시작=========================
-# sqlalchemy session객체 추가
-globals()['db'] = SessionLocal()
-#### custom import 끝=========================
+# 1) 내 파일 속 python 객체 import
+import_target('/main.py', 'app')
+import_target('/database.py', 'Base', with_table=True)
+import_target('/database.py', 'SessionLocal', instance_name='session')
+# from main import app
+# from database import Base, SessionLocal
+# from models import Film, Employee, Department
+# session = SessionLocal()
 
 
+# import_target('schemas/picstagrams.py', 'PostSchema')
+# import_target('schemas/abc/picstagrams.py', 'TagCreateReq')
+# import_target('schemas/picstagrams.py', ['TagCreateReq', 'PostSchema'])
+import_target('schemas\picstagrams.py', '*')
+# from schemas.picstagrams import *
 
-embed(colors='neutral', banner2=banner)
+
+# 3) 폴더/*.py의 모든 모듈들을 import하기
+# import_folder('schemas')
+# from schemas.picstagrams import *
+# from schemas.tracks import *
+# from schemas.utils import *
+
+
+# 4) 설치 패키지 from -> 경로 / import -> * or 'select' or ['select', 'or_']
+# import_target('sqlalchemy', '*', is_package=True)
+# import_target('sqlalchemy', 'select', is_package=True)
+import_target('sqlalchemy', ['select', 'or_'], is_package=True)
+# from sqlalchemy import select, or_
+
+
+start_ipython()

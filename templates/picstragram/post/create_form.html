@@ -1,156 +1,90 @@
-{% extends 'picstragram/_page_base.html' %}
+{#{% extends 'picstragram/_page_base.html' %}#}
 {% import 'macros/_form.html' as _form %}
 
-{% block extrastyle %}
-    {{ super() }}
-    <link href="https://unpkg.com/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css"/>
-{% endblock extrastyle %}
 
+{#{% block title %} test {% endblock %}#}
+{#{% block content %}#}
 
-{% block title %} test {% endblock %}
-{% block content %}
-      <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
-{#          hx-ext="json-enc"#}
+{#<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>#}
+{#          hx-ext="json-enc"#}  {# file이 없을 때의 form은 그냥 json으로 보내서, .as_form 안써도 되기#}
+
 {#          hx-post="{{ url_for('test_post') }}"#}
 {#          hx-trigger="submit"#}
-    <form style=""
-          action="{{ url_for('test_post') }}"
-          method="post"
-    >
-        <div class="container">
-            <button type="submit">제출</button>
+{#          hx-encoding="multipart/form-data"#}
 
-            {#        src=request.url_for("uploads", path="images/post-0001.jpeg"),#}
-            {{ _form.inline_preview_input(
+<!-- .modal-content  < (base) .modal-dialog < .modal  -->
+{#      action="{{ url_for('test_post') }}"#}
+<form class="modal-content"
+      action="{{ url_for('pic_hx_create_post') }}"
+      method="post"
+      enctype="multipart/form-data"
+>
+    <!-- header -->
+    <div class="modal-header">
+        <h1 class="modal-title fs-5" id="modalLabel">새 게시물 작성</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        {#        src=request.url_for("uploads", path="images/post-0001.jpeg"),#}
+        {{ _form.inline_preview_input(
                     width='100%;max-width:500px;',
                     label='내 기기에서 선택',
                     name='file',
                     value='',
-                    _class='mb-5', btn_class='fs-6 mt-2'
+                    _class='mb-5',
+                    preview_div_class='',
+                    content_div_class='',
+                    btn_class='fs-6 mt-3',
+                    btn_height="50px;",
+                    btn_font_color="#fff;"
                 ) }}
-            {{ _form.inline_textarea(
+
+
+        {{ _form.inline_textarea(
                     bg_color='#e8f0fe',
                     width='100%;max-width:500px;',
                     label='내용',
                     label_class='',
-                    name='body',
+                    name='content',
                     value='',
-                    _class='',
+                    _class='mb-3',
+                    input_class='',
                     required=True,
                     two_col_size='md'
                 ) }}
 
+        {#white_tag_names='["예시", "태그"]',#}
+        {#default_tag_names='예시, 태그',#}
+        {{ _form.inline_tags(
+                    bg_color='#e8f0fe',
+                    text_color='black',
+                    width='100%;max-width:500px;',
+                    label='태그',
+                    label_class='',
+                    name='tags',
+                    default_tag_names='',
+                    white_tag_names='["예시", "태그"]',
+                    _class='mb-3',
+                    input_class='',
+                    two_col_size='md'
+                ) }}
 
-            <style>
-                .xx-container {
-                    width: 100%;
-                    max-width: 500px;
-                    display: flex;
-                    align-items: center;
-                }
 
-                .xx-container input[name='tags'] {
-                    width: 100%;
-                }
-
-            </style>
-            <div class="xx-container mx-auto text-center form-group row">
-                <label class="d-none d-md-inline col-md-2 col-form-label fw-bold ">
-                    라벨:
-                </label>
-                <div class="col-md-10">
-                    <input hidden name="tags" class="form-control form-control-sm form-control-solid" placeholder="Enter tags">
-                </div>
-            </div>
-            <script src="https://unpkg.com/@yaireo/tagify"></script>
-            <script src="https://unpkg.com/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
-            <script>
-                let tagsInput = document.querySelector('input[name=tags]');
-                // init Tagify script on the above
-                //{#data = JSON.parse({{countries | tojson}})#}
-                let whitelist = ['Landscape', 'Animals', 'People', 'Urban', 'Black & White'];
-                let tagify = new Tagify(tagsInput, {
-                    whitelist: whitelist,
-                    //originalInputValueFormat: valuesArr => valuesArr.map(item => { return {name: item.value}}),
-                    // "input": "[object Object],[object Object],[object Object],[object Object]",
-
-                    //tagTextProp: 'name',
-                    //originalInputValueFormat: valuesArr => valuesArr.map(item => {return { "name": item.name }}),
-                    //            "msg": "Input should be a valid list",
-                    // "input": "[{\"name\":\"a\"},{\"name\":\"b\"},{\"name\":\"c\"},{\"name\":\"d\"}]",
-
-                    //enforceWhitelist: true
-                    //dropdown: {
-                    //    position: "manual",
-                    //    maxItems: Infinity,
-                    //    enabled: 0,
-                    //    classname: "customSuggestionsList"
-                    //},
-                });
-
-                // Chainable event listeners
-                tagify.on('add', onAddTag)
-                    .on('remove', onRemoveTag)
-                    .on('input', onInput)
-                    .on('invalid', onInvalidTag)
-
-                // tag added callback
-                function onAddTag(e) {
-                    console.log("onAddTag: ", e.detail);
-                    console.log("original input value: ", tagsInput.value)
-                    //tagify.off('add', onAddTag) // exmaple of removing a custom Tagify event
-                }
-
-                // tag remvoed callback
-                function onRemoveTag(e) {
-                    console.log(e.detail);
-                    console.log("tagify instance value:", tagify.value)
-                }
-
-                // on character(s) added/removed (user is typing/deleting)
-                function onInput(e) {
-                    console.log(e.detail);
-                    console.log("onInput: ", e.detail);
-                }
-
-                // invalid tag added callback
-                function onInvalidTag(e) {
-                    console.log("onInvalidTag: ", e.detail);
-                }
-            </script>
-            <div id="id_tags">
-                <div>
-                    <label for="id_tags_0">
-                        <input type="checkbox" name="tags" value="1" id="id_tags_0">
-                        Landscape
-                    </label>
-                </div>
-                <div>
-                    <label for="id_tags_1">
-                        <input type="checkbox" name="tags" value="2" id="id_tags_1">
-                        Animals
-                    </label>
-                </div>
-                <div>
-                    <label for="id_tags_2">
-                        <input type="checkbox" name="tags" value="3" id="id_tags_2">
-                        People
-                    </label>
-
-                </div>
-                <div>
-                    <label for="id_tags_3">
-                        <input type="checkbox" name="tags" value="4" id="id_tags_3">
-                        Urban
-                    </label>
-                </div>
-                <div>
-                    <label for="id_tags_4">
-                        <input type="checkbox" name="tags" value="5" id="id_tags_4">
-                        Black &amp; White
-                    </label>
-                </div>
-            </div>
-        </div>
-    </form>
-{% endblock %}
+        {{ _form.submit_btn(width = '100%;max-width: 500px;',
+                    justify_content = 'end;',
+                    btn_width = 'auto;max-width: 200px;',
+                    btn_height = '50px;',
+                    btn_class =  'fs-6 mt-3',
+                    btn_size =  'sm',
+                    btn_bg_color = 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%);',
+                    btn_text =  '게시하기',
+                    btn_font_color =  '#fff;',
+                    has_cancel_btn = True,
+                    btn_gap = '3',
+                    cancel_btn_text =  '취소',
+                    cancel_btn_bg_color = '#fff',
+                    cancel_btn_font_color = 'black'
+                    ) }}
+    </div>
+</form>
+{#{% endblock %}#}

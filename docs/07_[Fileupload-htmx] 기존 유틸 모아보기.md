@@ -441,7 +441,7 @@
     
     <body>
     
-    <div class="preview-container">
+    <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
@@ -579,7 +579,7 @@
     
       <main>
     
-        <div class="preview-container mt-3">
+        <div class="container mt-3">
           <div class="row">
             <div class="col">
     
