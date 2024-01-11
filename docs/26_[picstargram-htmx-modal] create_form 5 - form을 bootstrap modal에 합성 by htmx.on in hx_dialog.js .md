@@ -153,7 +153,7 @@
         context = {
             'request': request,
         }
-        return templates.TemplateResponse("picstargram/post/create_form.html", context)
+        return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
     ```
     ```html
     {#<li data-bs-toggle="modal" data-bs-target="#postModal">#}
@@ -262,4 +262,5 @@
             data-bs-dismiss="modal"
     >{{- cancel_btn_text -}}</button>
     ``` 
-   
+
+- create_form은 이제 htmx로 부분렌더링 되므로 partials에 넣어준다.

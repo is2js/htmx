@@ -102,24 +102,10 @@
 
     <!-- Modal -->
     <div class="modal modal-blur fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" id="dialog">
+        {# 여기서 hx요청없이 hx-target="this"는 submit시 발생하는 204 evt(swap)시에 beforeSwap에 잡히도록 걸어주는 것으로
+           -> evt.detail.target.id가 "diaglog"까지 확인하여 modal.hide()시키기 위해. evt에 잡히도록 거는 것 #}
+        <div class="modal-dialog modal-dialog-centered" id="dialog" hx-target="this">
             {# inject htmx here #}
-            {#            <div class="modal-content">#}
-            {#                <div class="modal-header">#}
-            {#                    <h1 class="modal-title fs-5" id="postModalLabel">새 게시물 만들기</h1>#}
-            {#                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>#}
-            {#                </div>#}
-            {#                <div class="modal-body text-center">#}
-            {#                    <div style="font-size: 10em">#}
-            {#                        <svg style="width: 1em; height: 1em" xmlns="http://www.w3.org/2000/svg" width="16" height="16"#}
-            {#                             fill="#cccccc" class="bi bi-image-fill" viewBox="0 0 16 16">#}
-            {#                            <path d="M.002 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2V3zm1 9v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12zm5-6.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0z"></path>#}
-            {#                        </svg>#}
-            {#                    </div>#}
-            {#                    <p>사진과 동영상을 여기에 끌어다 놓으세요</p>#}
-            {#                    <button class="btn btn-sm btn-primary">컴퓨터에서 선택</button>#}
-            {#                </div>#}
-            {#            </div>#}
         </div>
     </div>
     <!-- 지원안한다는 Modal -->
@@ -133,6 +119,16 @@
             </div>
         </div>
     </div>
+
+    <!-- toast -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1031">
+        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div id="toast-body" class="toast-body">
+
+            </div>
+        </div>
+    </div>
+
     {# 공통 #}
     {% block script %}
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
@@ -140,6 +136,7 @@
                 crossorigin="anonymous">
         </script>
         <script src="{{ url_for('static', path='js/hx_dialog.js') }}"></script>
+        <script src="{{ url_for('static', path='js/hx_toast.js') }}"></script>
     {% endblock script %}
     </body>
     </html>

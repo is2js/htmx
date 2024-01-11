@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, RedirectResponse
 from starlette.staticfiles import StaticFiles
@@ -289,7 +290,7 @@ async def test(
         response: Response,
 ):
     context = {'request': request}
-    return templates.TemplateResponse("picstargram/post/create_form.html", context)
+    return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
 
 
 @app.post("/test/post", )
@@ -304,7 +305,7 @@ async def test_post(
         file: Union[UploadFile, None] = None
 ):
     # as_form 반영 전 -> 파라미터에서 따로 받을 수 있음.
-    print(f"file  >> {file}")
+    # print(f"file  >> {file}")
     # file  >> <starlette.datastructures.UploadFile object at 0x0000018A11E84C40>
     # post_create_req  >> content='a' tags=[TagCreateReq(name='a'), TagCreateReq(name='b'), TagCreateReq(name='c')]
 
@@ -333,7 +334,7 @@ async def test_post(
     # originalInputValueFormat: valuesArr => JSON.stringify(valuesArr.map(item => { return {name: item.value}})),
     # body >> {'file': [], 'body': 'ㅁㄴ', 'tags': '[{"name":"a"},{"name":"b"},{"name":"c"}]'}
 
-    return templates.TemplateResponse("picstargram/post/create_form.html", context)
+    return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
 
 
 ############
@@ -730,7 +731,7 @@ async def pic_get_post(
             'request': request,
             'post': post,
         }
-        return templates.TemplateResponse("picstargram/post/post.html", context)
+        return templates.TemplateResponse("picstargram/post/partials/post.html", context)
 
     if post is None:
         response.status_code = 404
@@ -793,7 +794,7 @@ async def pic_update_post(
             'request': request,
             'post': post,
         }
-        return templates.TemplateResponse("picstargram/post/post.html", context)
+        return templates.TemplateResponse("picstargram/post/partials/post.html", context)
 
     return post
 
@@ -1043,14 +1044,29 @@ async def pic_delete_tag(
 @app.get("/picstargram/", response_class=HTMLResponse)
 async def pic_index(
         request: Request,
-        hx_request: Optional[str] = Header(None),
+        # hx_request: Optional[str] = Header(None),
 ):
     posts = get_posts(with_user=True, with_tags=True, with_likes=True, with_comments=True)
+
     context = {
         'request': request,
         'posts': posts,
     }
     return templates.TemplateResponse("picstargram/home/index.html", context)
+
+
+@app.get("/picstargram/posts/show", response_class=HTMLResponse)
+async def pic_hx_show_posts(
+        request: Request,
+        hx_request: Optional[str] = Header(None),
+):
+    posts = get_posts(with_user=True, with_tags=True, with_likes=True, with_comments=True)
+
+    context = {
+        'request': request,
+        'posts': posts,
+    }
+    return templates.TemplateResponse("picstargram/post/partials/posts.html", context)
 
 
 @app.get("/picstargram/form/posts/create", response_class=HTMLResponse)
@@ -1061,43 +1077,50 @@ async def pic_hx_form_post_create(
     context = {
         'request': request,
     }
-    return templates.TemplateResponse("picstargram/post/create_form.html", context)
+    return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
 
 
 @app.post("/picstargram/posts/new")
 async def pic_new_post(
         request: Request,
-        # post_schema: PostSchema,
         response: Response,
         post_create_req=Depends(PostCreateReq.as_form),
         file: Union[UploadFile, None] = None
 ):
-    # try:
-    # post = create_post(post_schema)
-    # return post
+    try:
+        # 1) form데이터는 crud하기 전에 dict로 만들어야한다.
+        data = post_create_req.model_dump()
 
-    # 1) form데이터는 crud하기 전에 dict로 만들어야한다.
-    data = post_create_req.model_dump()
+        # 임시 user TODO: 로그인 구현시 현재 사용자가 들어와야함.
+        data.update({'user_id': 1})
 
-    # 2) file필드는 따로 처리한다. but req schema에는 입력X 처리후 dump된 dict에 반영할 준비를 한다.
-    if not file:
-        # post_create_req.image_url = None
-        # => schema에 없는 필드는 동적으로 줄 수없다(python obj와 다름)
-        # => file_upload 처리는 req.model_dump() -> data: dict변환 후 -> req가 아닌 model Schema에 주기
-        image_url = None
-    else:
-        # 파일처리 -> image_url 입력
-        image_url = "images/post-0001.jpeg"
-        ...
+        # 2) file필드는 따로 처리한다. but req schema에는 입력X 처리후 dump된 dict에 반영할 준비를 한다.
+        if not file:
+            # post_create_req.image_url = None  => schema에 없는 필드는 동적으로 줄 수없다(python obj와 다름)
+            image_url = None
+        else:
+            # 파일처리 -> TODO: 임시 image_url 입력
+            image_url = "images/post-0001.jpeg"
+        data.update({'image_url': image_url})
+        # data  >> {'content': 'a', 'tags': [{'name': 'a'}, {'name': 'b'}, {'name': 'v'}], 'image_url': URL('http://localhost:8000/uploads/images/post-0001.jpeg')}
 
-    data.update({'image_url': image_url})
-    # data  >> {'content': 'a', 'tags': [{'name': 'a'}, {'name': 'b'}, {'name': 'v'}], 'image_url': URL('http://localhost:8000/uploads/images/post-0001.jpeg')}
+        post = create_post(data)
 
-    create_post(data)
+        # 3) temaplate에서는 생성 성공시 list 화면으로 redirect한다. => htmx를 이용해 Nocontent + Hx-Trigger를 응답한다.
+        response.status_code = status.HTTP_204_NO_CONTENT
+        # response.headers["HX-Trigger"] = "postsChanged"
+        response.headers["HX-Trigger"] = json.dumps({
+            "postsChanged": None,
+            "showMessage": f"post({post.id}) added."
+        })
+        return response
 
-    # 3) temaplate에서는 생성 성공시 list 화면으로 redirect한다.
-    response = RedirectResponse('/picstargram/', status_code=302)
-    return response
+    except Exception as e:
+        # TODO: 템플릿 에러 처리.
+        print(f"e  >> {e}")
+        
+        raise e
+
     # response.status_code = 204
     # return response
 

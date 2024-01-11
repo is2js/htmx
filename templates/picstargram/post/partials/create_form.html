@@ -8,16 +8,16 @@
 {#<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>#}
 {#          hx-ext="json-enc"#}  {# file이 없을 때의 form은 그냥 json으로 보내서, .as_form 안써도 되기#}
 
-{#          hx-post="{{ url_for('test_post') }}"#}
-{#          hx-trigger="submit"#}
-{#          hx-encoding="multipart/form-data"#}
 
 <!-- .modal-content  < (base) .modal-dialog < .modal  -->
-{#      action="{{ url_for('test_post') }}"#}
+{#      action="{{ url_for('pic_new_post') }}"#}
+{#      method="post"#}
+{#      enctype="multipart/form-data"#}
+{# htmx render form은 hx로 보내야 request -> response가 정상적으로 작동한다! #}
 <form class="modal-content"
-      action="{{ url_for('pic_new_post') }}"
-      method="post"
-      enctype="multipart/form-data"
+          hx-trigger="submit"
+          hx-post="{{ url_for('pic_new_post') }}"
+          hx-encoding="multipart/form-data"
 >
     <!-- header -->
     <div class="modal-header">

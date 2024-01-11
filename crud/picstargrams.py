@@ -1,7 +1,7 @@
 # CRUD 함수 정의
 import datetime
 
-from schemas.picstagrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema
+from schemas.picstargrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema, PostTagSchema
 
 users, comments, posts, likes, tags, post_tags = [], [], [], [], [], []
 
@@ -160,23 +160,47 @@ def get_posts(
 
 
 # new) many생성시, schema 속  fk로 온 one_id -> 파라미터로 + 내부 one존재여부 검사 필수
-def create_post(post_schema: PostSchema):
+# def create_post(post_schema: PostSchema):
+def create_post(data: dict):
     # new) many생성시 one존재여부 검사 필수 -> 없으면 404 에러
-    user = get_user(post_schema.user_id)
-    if not user:
-        raise Exception(f"해당 user(id={post_schema.user_id})가 존재하지 않습니다.")
+    # user = get_user(post_schema.user_id)
+    # if not user:
+    #     raise Exception(f"해당 user(id={post_schema.user_id})가 존재하지 않습니다.")
 
     try:
-        # id + created_at, updated_at 부여
-        post_schema.id = find_max_id(posts) + 1
-        post_schema.created_at = post_schema.updated_at = datetime.datetime.now()
+        # many1) 에 대한 정보는 Optional[List[해당Schema]]로 직접 변환해야함.
+        if data.get('tags'):
+            tags = []
+            for tag_data in data['tags']:
+                if tag := get_tag_by_name(tag_data['name']):
+                    print(f"  >> 있는 태그")
+                    tags.append(tag)
+                else:
+                    print(f"  >> 없는 태그")
+                    tags.append(create_tag(tag_data))
 
-        posts.append(post_schema)
+            data['tags'] = tags
+
+        post = PostSchema(**data)
+
+        # id + created_at, updated_at 서버 부여
+        post.id = find_max_id(posts) + 1
+        post.created_at = post.updated_at = datetime.datetime.now()
+
+        # many2) 가 존재할 때만, 중간테이블 생성 호출! 추가
+        if post.tags:
+            try:
+                create_post_tags(post, post.tags)
+            except Exception as e:
+                raise e
+
+        posts.append(post)
+
+        return post
 
     except Exception as e:
         raise e
 
-    return post_schema
 
 
 # def update_post(post_id: int, post_schema: PostSchema):
@@ -399,6 +423,14 @@ def get_tag(tag_id: int, with_posts: bool = False):
     return tag
 
 
+def get_tag_by_name(name: str):
+    tag = next((tag for tag in tags if tag.name.lower() == name.lower()), None)
+    if not tag:
+        return None
+
+    return tag
+
+
 def get_tags(with_posts: bool = False):
     if with_posts:
         for tag in tags:
@@ -408,18 +440,26 @@ def get_tags(with_posts: bool = False):
     return tags
 
 
-def create_tag(tag_schema: TagSchema):
+# def create_tag(tag_schema: TagSchema):
+def create_tag(data: dict):
     try:
-        # id 부여
-        tag_schema.id = find_max_id(tags) + 1
-        # created_at, updated_at 부여
-        tag_schema.created_at = tag_schema.updated_at = datetime.datetime.now()
+        # optional인 created_at을 data dict에 미리 넣어줘야 **로 생성된다?!
+        data.update({
+            'created_at': datetime.datetime.now(),
+            'updated_at': datetime.datetime.now()
+        })
 
-        tags.append(tag_schema)
+        tag = TagSchema(**data)
+
+        # 서버부여
+        tag.id = find_max_id(tags) + 1
+        tag.created_at = tag.updated_at = datetime.datetime.now()
+
+        tags.append(tag)
     except Exception as e:
         raise e
 
-    return tag_schema
+    return tag
 
 
 def update_tag(tag_id: int, tag_schema: TagSchema):
@@ -444,7 +484,6 @@ def delete_tag(tag_id: int):
     global tags
     tags = [tag for tag in tags if tag.id != tag_id]
 
-
     # post와 중간테이블데이터도 many로서 삭제
     global post_tags
     post_tags = [post_tag for post_tag in post_tags if post_tag.tag_id != tag_id]
@@ -464,6 +503,24 @@ def get_post_tag(post_tag_id: int, with_post: bool = False, with_tag: bool = Fal
     return post_tag
 
 
+def create_post_tags(post, tags):
+    try:
+        for tag in tags:
+            post_tag = PostTagSchema(
+                post_id=post.id,
+                tag_id=tag.id,
+            )
+
+            post_tag.id = find_max_id(post_tags) + 1
+            post_tag.created_at = post_tag.updated_at = datetime.datetime.now()
+
+            # 아이디 부여 후, 원본에 append하지 않으면 -> 같은 id로만 부여된다. 조심. 매번 id 수동 부여
+            post_tags.append(post_tag)
+
+    except Exception as e:
+        raise e
+
+
 # post.post_tags -> 각 post_tag에 tag가 박힘 : post.tags 를 위해,
 # post_id로 post_tags를 찾되, 내부에서 post_tags에서는 with_tags를 eagerload한 것을 불러온다.
 def get_post_tags_by_post_id(post_id: int, with_tag: bool = False):
@@ -476,7 +533,7 @@ def get_post_tags_by_post_id(post_id: int, with_tag: bool = False):
     #    post_tags의 각 데이터마다 tag(반대쪽one)이 박혀있도록 eagerload하기 위해
     #    단일조회메서드(with_tags=True)를 활용한다
     if not with_tag:
-        return [post_tag for post_tag in post_tags if post_tag.post_id == post_id]
+        return [post_tag for post_tag in post_tags if post_tag.post_id == post.id]
     else:  # with_tag=True
         return [
             get_post_tag(post_tag.id, with_tag=True) for post_tag in post_tags if

@@ -6,9 +6,17 @@
 {% block subtitle %}최신포스트{% endblock subtitle %}
 
 {% block content %}
-    {% for post in posts %}
-        {% include 'picstargram/post/post.html' %}
-    {% endfor %}
+{#    {% for post in posts %}#}
+{#        {% include 'picstargram/post/partials/post.html' %}#}
+{#    {% endfor %}#}
+    <div hx-trigger="load, postsChanged from:body"
+         hx-get="{{ url_for('pic_hx_show_posts') }}"
+         hx-target="this"
+    >
+        <div class="container text-center">
+            Loading...
+        </div>
+    </div>
 
     <div class="container">
         <article class="post">

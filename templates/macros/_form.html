@@ -335,6 +335,10 @@
 
 {% endmacro %}
 
+
+
+{#white_tag_names='["예시", "태그"]',#}
+{#default_tag_names='예시, 태그',#}
 {% macro inline_tags() -%}
     {%- set bg_color = kwargs.get('bg_color', '#e8f0fe') -%}
     {%- set text_color = kwargs.get('text_color', 'black') -%}

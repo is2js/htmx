@@ -35,8 +35,9 @@ class PostSchema(BaseModel):
     # title: str
     content: str
     image_url: Optional[str] = None
-    created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
-    updated_at: Optional[datetime.datetime]
+    # Optional필드도 = None을 부여해야, backend에서 Schema(**data)시 필드에러 안난다.
+    created_at: Optional[datetime.datetime] = None # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    updated_at: Optional[datetime.datetime] = None
     user_id: int
 
     user: Optional[UserSchema] = None
@@ -135,8 +136,9 @@ class PostTagSchema(BaseModel):
     id: Optional[int] = None
     post_id: int
     tag_id: int
-    created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
-    updated_at: Optional[datetime.datetime]
+    created_at: Optional[datetime.datetime] = None # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    # Optional도 기본값을 줘야 -> Schema(**)시 기본값 입력이 되며, 안주면 에러가 난다.
+    updated_at: Optional[datetime.datetime] = None
 
     post: Optional[PostSchema] = []  # 중간테이블에선 각각이 one이다.
     tag: Optional[TagSchema] = []

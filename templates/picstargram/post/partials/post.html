@@ -24,13 +24,15 @@
             </div>
         </div>
         <div class="contents">
-            <img class="img-fluid" alt="100%x250" src="{{ url_for('uploads', path=post.image_url) }}">
+            {% if post.image_url %}
+                <img class="img-fluid" alt="100%x250" src="{{ url_for('uploads', path=post.image_url) }}">
+            {% endif %}
             {# 추가 텍스트 post.content + tag #}
             <p class="fs-5 fw-bold mt-3 mb-10 px-4">{{ post.content }}</p>
             <div class="d-flex align-items-center gap-2 text-sm mb-5 flex-wrap">
                 {% for tag in post.tags %}
-{#                       onmouseover="this.style.backgroundColor='black'; this.style.color='white';"#}
-{#                       onmouseout="this.style.backgroundColor='#bebebe'; this.style.color='black';"#}
+                    {#                       onmouseover="this.style.backgroundColor='black'; this.style.color='white';"#}
+                    {#                       onmouseout="this.style.backgroundColor='#bebebe'; this.style.color='black';"#}
                     <a href="{{ url_for('pic_get_tag', tag_id=tag.id) }} "
                        class="btn btn-sm rounded-pill border-0 px-3 py-1"
                        style="background: linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%); color: #fff; transition: background-color 0.3s, color 0.3s;"
