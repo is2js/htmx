@@ -10,16 +10,16 @@ import_target('/database.py', 'SessionLocal', instance_name='session')
 # session = SessionLocal()
 
 
-# import_target('schemas/picstagrams.py', 'PostSchema')
-# import_target('schemas/abc/picstagrams.py', 'TagCreateReq')
-# import_target('schemas/picstagrams.py', ['TagCreateReq', 'PostSchema'])
-import_target('schemas\picstagrams.py', '*')
-# from schemas.picstagrams import *
+# import_target('schemas/picstargrams.py', 'PostSchema')
+# import_target('schemas/abc/picstargrams.py', 'TagCreateReq')
+# import_target('schemas/picstargrams.py', ['TagCreateReq', 'PostSchema'])
+import_target('schemas\picstargrams.py', '*')
+# from schemas.picstargrams import *
 
 
 # 3) 폴더/*.py의 모든 모듈들을 import하기
 # import_folder('schemas')
-# from schemas.picstagrams import *
+# from schemas.picstargrams import *
 # from schemas.tracks import *
 # from schemas.utils import *
 

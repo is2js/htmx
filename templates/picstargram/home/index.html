@@ -1,4 +1,4 @@
-{% extends 'picstragram/_page_base.html' %}
+{% extends 'picstargram/_page_base.html' %}
 
 {% block meta %} {{ super() }} {% endblock meta %}
 {% block css %} {{ super() }} {% endblock css %}
@@ -7,7 +7,7 @@
 
 {% block content %}
     {% for post in posts %}
-        {% include 'picstragram/post/post.html' %}
+        {% include 'picstargram/post/post.html' %}
     {% endfor %}
 
     <div class="container">

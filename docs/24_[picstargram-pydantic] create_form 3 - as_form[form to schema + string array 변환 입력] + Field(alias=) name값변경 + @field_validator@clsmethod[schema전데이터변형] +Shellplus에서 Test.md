@@ -4,7 +4,7 @@ from shellplus import start_ipython, import_target, import_folder
 
 import_target('/main.py', 'app')
 
-import_target('schemas\picstagrams.py', '*')
+import_target('schemas\picstargrams.py', '*')
 
 start_ipython()
 
@@ -187,7 +187,7 @@ start_ipython()
 
 - shell.py에 Schema를 import하고, 터미널에서 실행한다.
     ```python
-    import_target('schemas\picstagrams.py', '*')
+    import_target('schemas\picstargrams.py', '*')
     
     start_ipython()
     

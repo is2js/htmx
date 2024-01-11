@@ -18,7 +18,7 @@
     - main.py에서는 `crud 함수들을 import`해서 사용한다.
         ```python
         # main.py
-        from crud.picstragrams import users, posts
+        from crud.picstargrams import users, posts
        ```
 
     - 데이터 load함수에서는 **`import한 list변수.extend()`로 추가해준다.**

@@ -13,12 +13,12 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
+from starlette.responses import Response, RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 import models
 from database import SessionLocal, engine
-from schemas.picstagrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
+from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
     UpdatePostReq, TagCreateReq, PostCreateReq
 from schemas.tracks import Track
 from schemas.utils import form_to, FormTo
@@ -30,7 +30,7 @@ models.Base.metadata.create_all(bind=engine)
 # 메모리 데이터 모음
 tracks_data = []
 # users, comments, posts = [], [], []
-from crud.picstragrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
+from crud.picstargrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
     update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
     update_tag, delete_tag
@@ -53,9 +53,9 @@ async def lifespan(app: FastAPI):
     # 3) [EmpDept] dict -> sqlalchemy orm class
     await init_emp_dept_dict_to_db(db)
 
-    # 4) [Picstragram] dict -> pydantic schema model
+    # 4) [Picstargram] dict -> pydantic schema model
     # global users, comments, posts
-    users_, comments_, posts_, likes_, tags_, post_tags_ = await init_picstragram_json_to_list_per_pydantic_model()
+    users_, comments_, posts_, likes_, tags_, post_tags_ = await init_picstargram_json_to_list_per_pydantic_model()
     users.extend(users_)
     comments.extend(comments_)
     posts.extend(posts_)
@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     # shutdown
 
 
-async def init_picstragram_json_to_list_per_pydantic_model():
+async def init_picstargram_json_to_list_per_pydantic_model():
     """
     json을 도메인(user, post, comment별로 pydantic model list 3개로 나누어 받지만,
     추후, pydantic_model.model_dumps() -> sqlalchemy model(** )로 넣어서 만들면 된다.
@@ -76,29 +76,29 @@ async def init_picstragram_json_to_list_per_pydantic_model():
        관계pydantic model을 가지기 위해서이다.
     ===> 추후, 관계 pydantic model을 -> sqlalchemy Model로 변경해줘야한다.
     """
-    # picstragram_path = pathlib.Path() / 'data' / 'picstragram.json'
-    picstragram_path = pathlib.Path() / 'data' / 'picstragram2.json'
+    # picstargram_path = pathlib.Path() / 'data' / 'picstargram.json'
+    picstargram_path = pathlib.Path() / 'data' / 'picstargram2.json'
 
-    with open(picstragram_path, 'r', encoding='utf-8') as f:
-        picstragram = json.load(f)
+    with open(picstargram_path, 'r', encoding='utf-8') as f:
+        picstargram = json.load(f)
         # 단순 순회하며 처음부터 append하는 것은 list comp로 처리한다.
         # + list를 기대하고 dict를 꺼낼 땐 get(, [])로 처리하면 된다.
 
-        users = [UserSchema(**user) for user in picstragram.get("users", [])]
+        users = [UserSchema(**user) for user in picstargram.get("users", [])]
 
         ## 관계Schema에 집어넣을 땐, next(, None) + pk==fk를 비교하고, 그에 맞는 Schema객체를 넣어준다.
         # M:1관계 - next(, None)으로 1개만 찾기
-        # comments = [CommentSchema(**user) for user in picstragram.get("comments", [])]
+        # comments = [CommentSchema(**user) for user in picstargram.get("comments", [])]
         comments = [
             CommentSchema(
                 **comment,
                 # user=next((user for user in users if user.id == comment["user_id"]), None)
             )
-            for comment in picstragram.get("comments", [])
+            for comment in picstargram.get("comments", [])
         ]
 
         # M:1(user), 1:M(comments)-list comp로 여러개 찾기
-        # posts = [PostSchema(**user) for user in picstragram.get("posts", [])]
+        # posts = [PostSchema(**user) for user in picstargram.get("posts", [])]
         # ==> 1:M관계를 미리채워놓으면, M:1관계 comment(M)- posts(1)이 미리 채워져 있는 경우, dump시 무한 반복된다.
         #     => fk가 주어져있으면 미리 채워놓지 말고, crud에서 채우자.
         posts = [
@@ -107,7 +107,7 @@ async def init_picstragram_json_to_list_per_pydantic_model():
                 # user=next((user for user in users if user.id == post["user_id"]), None),
                 # comments=[comment for comment in comments if comment.post_id == post["id"]]
             )
-            for post in picstragram.get("posts", [])
+            for post in picstargram.get("posts", [])
         ]
 
         # 1:M 관계 2개
@@ -116,12 +116,12 @@ async def init_picstragram_json_to_list_per_pydantic_model():
         # user.comments = [comment for comment in comments if comment.user_id == user.id]
 
     # 다대다 추가
-    likes = [LikeSchema(**like) for like in picstragram.get("likes", [])]
-    tags = [TagSchema(**tag) for tag in picstragram.get("tags", [])]
-    post_tags = [PostTagSchema(**tag) for tag in picstragram.get("post_tags", [])]
+    likes = [LikeSchema(**like) for like in picstargram.get("likes", [])]
+    tags = [TagSchema(**tag) for tag in picstargram.get("tags", [])]
+    post_tags = [PostTagSchema(**tag) for tag in picstargram.get("post_tags", [])]
 
     print(
-        f"[Picstragram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, likes-{len(likes)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개"
+        f"[Picstargram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, likes-{len(likes)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개"
         f"의 json 데이터, 각 list에 load")
     return users, comments, posts, likes, tags, post_tags
 
@@ -289,7 +289,7 @@ async def test(
         response: Response,
 ):
     context = {'request': request}
-    return templates.TemplateResponse("picstragram/post/create_form.html", context)
+    return templates.TemplateResponse("picstargram/post/create_form.html", context)
 
 
 @app.post("/test/post", )
@@ -309,7 +309,7 @@ async def test_post(
     # post_create_req  >> content='a' tags=[TagCreateReq(name='a'), TagCreateReq(name='b'), TagCreateReq(name='c')]
 
     # as_form 반영 후 -> post_creat_req에서 필드로서 받음.
-    
+
     # print(f"content >> {content}")
     # print(f"tags >> {tags}")
     # body >> b'file=&body=asdf&tags=%5B%7B%22value%22%3A%22a%22%7D%2C%7B%22value%22%3A%22b%22%7D%2C%7B%22value%22%3A%22c%22%7D%5D'
@@ -333,7 +333,7 @@ async def test_post(
     # originalInputValueFormat: valuesArr => JSON.stringify(valuesArr.map(item => { return {name: item.value}})),
     # body >> {'file': [], 'body': 'ㅁㄴ', 'tags': '[{"name":"a"},{"name":"b"},{"name":"c"}]'}
 
-    return templates.TemplateResponse("picstragram/post/create_form.html", context)
+    return templates.TemplateResponse("picstargram/post/create_form.html", context)
 
 
 ############
@@ -631,10 +631,10 @@ async def hx_upload_file(
 
 
 ############
-# picstragram
+# picstargram
 ############
 ############
-# picstragram users
+# picstargram users
 ############
 
 @app.get("/users/", response_model=List[UserSchema])
@@ -705,7 +705,7 @@ async def pic_delete_user(
 
 
 ############
-# picstragram posts
+# picstargram posts
 ############
 
 @app.get("/posts/", response_model=List[PostSchema])
@@ -730,13 +730,28 @@ async def pic_get_post(
             'request': request,
             'post': post,
         }
-        return templates.TemplateResponse("picstragram/post/post.html", context)
+        return templates.TemplateResponse("picstargram/post/post.html", context)
 
     if post is None:
         response.status_code = 404
         return "Post 정보가 없습니다."
 
     return post
+
+
+@app.post("/posts", response_model=Union[PostSchema, str], status_code=201)
+async def pic_create_post(
+        request: Request,
+        post_schema: PostSchema,
+        response: Response,
+):
+    try:
+        post = create_post(post_schema)
+        return post
+
+    except Exception as e:
+        response.status_code = 400
+        return f"Post 생성에 실패했습니다.: {e}"
 
 
 @app.post("/posts", response_model=Union[PostSchema, str], status_code=201)
@@ -778,7 +793,7 @@ async def pic_update_post(
             'request': request,
             'post': post,
         }
-        return templates.TemplateResponse("picstragram/post/post.html", context)
+        return templates.TemplateResponse("picstargram/post/post.html", context)
 
     return post
 
@@ -796,7 +811,7 @@ async def pic_hx_get_edit_form(
         'post': post,
     }
 
-    return templates.TemplateResponse("picstragram/post/partials/edit_form.html", context)
+    return templates.TemplateResponse("picstargram/post/partials/edit_form.html", context)
 
 
 @app.delete("/posts/{post_id}", )
@@ -817,13 +832,13 @@ async def pic_delete_post(
         context = {
             'request': request
         }
-        return templates.TemplateResponse("picstragram/_empty.html", context)
+        return templates.TemplateResponse("picstargram/_empty.html", context)
 
     return "Post 삭제에 성공했습니다."
 
 
 ############
-# picstragram comments
+# picstargram comments
 ############
 @app.get("/comments/{comment_id}", response_model=Union[CommentSchema, str])
 async def pic_get_comment(
@@ -897,7 +912,7 @@ async def pic_delete_comment(
 
 
 ############
-# picstragram like
+# picstargram like
 ############
 @app.post("/like", response_model=Union[LikeSchema, str], status_code=201)
 async def pic_create_like(
@@ -953,7 +968,7 @@ async def pic_create_or_delete_like(
 
 
 ############
-# picstragram tags
+# picstargram tags
 ############
 @app.get("/tags/", response_model=List[TagSchema])
 async def pic_get_tags(request: Request):
@@ -1023,9 +1038,9 @@ async def pic_delete_tag(
 
 
 ############
-# picstragram templates
+# picstargram templates
 ############
-@app.get("/picstragram/", response_class=HTMLResponse)
+@app.get("/picstargram/", response_class=HTMLResponse)
 async def pic_index(
         request: Request,
         hx_request: Optional[str] = Header(None),
@@ -1035,23 +1050,76 @@ async def pic_index(
         'request': request,
         'posts': posts,
     }
-    return templates.TemplateResponse("picstragram/home/index.html", context)
+    return templates.TemplateResponse("picstargram/home/index.html", context)
 
 
-@app.get("/picstragram/me/", response_class=HTMLResponse)
+@app.get("/picstargram/form/posts/create", response_class=HTMLResponse)
+async def pic_hx_form_post_create(
+        request: Request,
+        hx_request: Optional[str] = Header(None),
+):
+    context = {
+        'request': request,
+    }
+    return templates.TemplateResponse("picstargram/post/create_form.html", context)
+
+
+@app.post("/picstargram/posts/new")
+async def pic_new_post(
+        request: Request,
+        # post_schema: PostSchema,
+        response: Response,
+        post_create_req=Depends(PostCreateReq.as_form),
+        file: Union[UploadFile, None] = None
+):
+    # try:
+    # post = create_post(post_schema)
+    # return post
+
+    # 1) form데이터는 crud하기 전에 dict로 만들어야한다.
+    data = post_create_req.model_dump()
+
+    # 2) file필드는 따로 처리한다. but req schema에는 입력X 처리후 dump된 dict에 반영할 준비를 한다.
+    if not file:
+        # post_create_req.image_url = None
+        # => schema에 없는 필드는 동적으로 줄 수없다(python obj와 다름)
+        # => file_upload 처리는 req.model_dump() -> data: dict변환 후 -> req가 아닌 model Schema에 주기
+        image_url = None
+    else:
+        # 파일처리 -> image_url 입력
+        image_url = "images/post-0001.jpeg"
+        ...
+
+    data.update({'image_url': image_url})
+    # data  >> {'content': 'a', 'tags': [{'name': 'a'}, {'name': 'b'}, {'name': 'v'}], 'image_url': URL('http://localhost:8000/uploads/images/post-0001.jpeg')}
+
+    create_post(data)
+
+    # 3) temaplate에서는 생성 성공시 list 화면으로 redirect한다.
+    response = RedirectResponse('/picstargram/', status_code=302)
+    return response
+    # response.status_code = 204
+    # return response
+
+    # except Exception as e:
+    #     response.status_code = 400
+    #     return f"Post 생성에 실패했습니다.: {e}"
+
+
+@app.get("/picstargram/me/", response_class=HTMLResponse)
 async def pic_me(
         request: Request,
         hx_request: Optional[str] = Header(None),
 ):
     context = {'request': request}
-    return templates.TemplateResponse("picstragram/user/me.html", context)
+    return templates.TemplateResponse("picstargram/user/me.html", context)
 
 
-@app.get("/picstragram/users/", response_class=HTMLResponse)
+@app.get("/picstargram/users/", response_class=HTMLResponse)
 async def pic_users(
         request: Request,
         username: Optional[str] = None,
         hx_request: Optional[str] = Header(None),
 ):
     context = {'request': request}
-    return templates.TemplateResponse("picstragram/user/user.html", context)
+    return templates.TemplateResponse("picstargram/user/user.html", context)

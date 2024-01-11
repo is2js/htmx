@@ -58,7 +58,7 @@ def import_target(
 
     relative_path_of_module = Path(*relative_module_path_parts)  # .resolve() # 상대주소만 이용할거면 .resolve()를 통한 C:// 절대경로는 (X
 
-    #  schemas\picstagrams.py
+    #  schemas\picstargrams.py
     # 참고)
     # parent_paths = [part for part in relative_path_of_module.parents
     #                 if relative_path_of_module.name not in part.parts]
@@ -82,11 +82,11 @@ def import_target(
             # relative_path = module_of_target_path.relative_to(root_path)
             # print(f"relative_path >> {relative_path} in {__file__}")
 
-            # relative_path >> schemas\picstagrams.py
+            # relative_path >> schemas\picstargrams.py
             path_elements = '.'.join(
                 list(relative_path_of_module.parts[:-1]) + [relative_path_of_module.stem])
             # print(f"path_elements  >> {path_elements}")
-            # path_elements  >> schemas.picstagrams
+            # path_elements  >> schemas.picstargrams
             from_path = path_elements
         else:
             from_path = relative_path_of_module.stem

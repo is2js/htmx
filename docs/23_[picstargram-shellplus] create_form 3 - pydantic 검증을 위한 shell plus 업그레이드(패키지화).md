@@ -31,7 +31,7 @@
     import_target('/database.py', 'Base', with_table=True)
     import_target('/database.py', 'SessionLocal', instance_name='session')
     
-    import_target('schemas/picstagrams.py', '*')
+    import_target('schemas/picstargrams.py', '*')
     
     import_target('sqlalchemy', ['select', 'or_'], is_package=True)
     
@@ -47,9 +47,9 @@
     - "`/ or \`"를 사용한 상대경로 입력 -> re.split("[/|\\]", path ) -> Path(*parts)로 `/`로 `os에 맞는 상대경로`의 Path 제작
         - **splite을 정규표현식으로 할려면, `re모듈.split(pattern, 대상)`을 사용해야한다**
         - **lstrip은 바로 정규식 사용이 가능하다.**
-    - `schemas/picstagrams.py`
-      or `schemas/picstragrams.py` -> `['schemas', 'picstagrams.py']` -> `Path('schemas', 'picstagrams.py')` -> path객체(
-      os에 맞는 구분자)`schemas\picstagrams.py`
+    - `schemas/picstargrams.py`
+      or `schemas/picstragrams.py` -> `['schemas', 'picstargrams.py']` -> `Path('schemas', 'picstargrams.py')` -> path객체(
+      os에 맞는 구분자)`schemas\picstargrams.py`
         - 참고로 Path객체.resolve()는 절대주소로 만든다. 여기선 쓸 필요없다.
     - 맨마지막이 `x.py`이므로 `path객체.stem`하면, 확장자를 제외한 모듈명만 나와서 import_module()안에 넣으면, 해당 python모듈을 가져올 수 있다.
     - 하지만, split한 parts가 1개 이상인 경우, `path객체.stem`은 맨 마지막만 파일의 모듈명만 나오므로, `path.pars[:-1]`로 모듈명전까지의 경로를 가져와 `list()`로 만든
@@ -132,7 +132,7 @@
     
         relative_path_of_module = Path(*relative_module_path_parts)  # .resolve() # 상대주소만 이용할거면 .resolve()를 통한 C:// 절대경로는 (X
     
-        #  schemas\picstagrams.py
+        #  schemas\picstargrams.py
         # 참고)
         # parent_paths = [part for part in relative_path_of_module.parents
         #                 if relative_path_of_module.name not in part.parts]
@@ -156,11 +156,11 @@
                 # relative_path = module_of_target_path.relative_to(root_path)
                 # print(f"relative_path >> {relative_path} in {__file__}")
     
-                # relative_path >> schemas\picstagrams.py
+                # relative_path >> schemas\picstargrams.py
                 path_elements = '.'.join(
                     list(relative_path_of_module.parts[:-1]) + [relative_path_of_module.stem])
                 # print(f"path_elements  >> {path_elements}")
-                # path_elements  >> schemas.picstagrams
+                # path_elements  >> schemas.picstargrams
                 from_path = path_elements
             else:
                 from_path = relative_path_of_module.stem
@@ -290,16 +290,16 @@ def start_ipython():
     # session = SessionLocal()
     
     
-    # import_target('schemas/picstagrams.py', 'PostSchema')
-    # import_target('schemas/abc/picstagrams.py', 'TagCreateReq')
-    # import_target('schemas/picstagrams.py', ['TagCreateReq', 'PostSchema'])
-    import_target('schemas\picstagrams.py', '*')
-    # from schemas.picstagrams import *
+    # import_target('schemas/picstargrams.py', 'PostSchema')
+    # import_target('schemas/abc/picstargrams.py', 'TagCreateReq')
+    # import_target('schemas/picstargrams.py', ['TagCreateReq', 'PostSchema'])
+    import_target('schemas\picstargrams.py', '*')
+    # from schemas.picstargrams import *
     
     
     # 3) 폴더/*.py의 모든 모듈들을 import하기
     # import_folder('schemas')
-    # from schemas.picstagrams import *
+    # from schemas.picstargrams import *
     # from schemas.tracks import *
     # from schemas.utils import *
     

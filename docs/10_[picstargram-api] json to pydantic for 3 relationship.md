@@ -4,10 +4,10 @@
     ```python
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-       # 4) [Picstragram] dict -> pydantic schema model
-        await init_picstragram_json_to_list_per_pydantic_model()
+       # 4) [Picstargram] dict -> pydantic schema model
+        await init_picstargram_json_to_list_per_pydantic_model()
    
-    async def init_picstragram_json_to_list_per_pydantic_model():
+    async def init_picstargram_json_to_list_per_pydantic_model():
         """
         json을 도메인(user, post, comment별로 pydantic model list 3개로 나누어 받지만,
         추후, pydantic_model.model_dumps() -> sqlalchemy model(** )로 넣어서 만들면 된다.

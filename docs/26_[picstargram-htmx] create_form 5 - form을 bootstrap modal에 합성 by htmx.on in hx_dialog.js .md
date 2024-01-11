@@ -26,7 +26,7 @@
         ```html
         <!-- post/creat_form.html-->
         
-        {#{% extends 'picstragram/_page_base.html' %}#}    
+        {#{% extends 'picstargram/_page_base.html' %}#}    
         {#{% block title %} test {% endblock %}#}
         {#{% block content %}#}
         
@@ -145,7 +145,7 @@
 
 5. 이제 내부내용인 create_form.html을 내려줄 hx-get용 route를 만들고, hx-get에 입려해준다.
     ```python
-    @app.get("/picstragram/form/posts/create", response_class=HTMLResponse)
+    @app.get("/picstargram/form/posts/create", response_class=HTMLResponse)
     async def pic_hx_form_post_create(
             request: Request,
             hx_request: Optional[str] = Header(None),
@@ -153,7 +153,7 @@
         context = {
             'request': request,
         }
-        return templates.TemplateResponse("picstragram/post/create_form.html", context)
+        return templates.TemplateResponse("picstargram/post/create_form.html", context)
     ```
     ```html
     {#<li data-bs-toggle="modal" data-bs-target="#postModal">#}

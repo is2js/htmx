@@ -1,4 +1,4 @@
-{#{% extends 'picstragram/_page_base.html' %}#}
+{#{% extends 'picstargram/_page_base.html' %}#}
 {% import 'macros/_form.html' as _form %}
 
 
@@ -15,7 +15,7 @@
 <!-- .modal-content  < (base) .modal-dialog < .modal  -->
 {#      action="{{ url_for('test_post') }}"#}
 <form class="modal-content"
-      action="{{ url_for('pic_hx_create_post') }}"
+      action="{{ url_for('pic_new_post') }}"
       method="post"
       enctype="multipart/form-data"
 >
