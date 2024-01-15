@@ -1,4 +1,4 @@
-- 장고+modal+htmx 참고 유튜브: https://www.youtube.com/watch?v=pAtrj8A-Kl4&t=423s
+- 장고+toast+htmx 참고 유튜브: https://www.youtube.com/watch?v=pAtrj8A-Kl4&t=423s
     - github: https://github.com/bblanchon/django-htmx-modal-form/blob/bootstrap5/movie_collection/templates/index.html
     - 로그인 참고 깃허브(fastapi + htmx +
       pydantic): https://github.dev/sammyrulez/htmx-fastapi/blob/main/templates/owner_form.html

@@ -16,6 +16,8 @@ import_target('/database.py', 'SessionLocal', instance_name='session')
 import_target('schemas\picstargrams.py', '*')
 # from schemas.picstargrams import *
 
+import_target('enums/messages.py', '*')
+
 
 # 3) 폴더/*.py의 모든 모듈들을 import하기
 # import_folder('schemas')

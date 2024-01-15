@@ -19,12 +19,13 @@ from starlette.staticfiles import StaticFiles
 
 import models
 from database import SessionLocal, engine
+from enums.messages import Message, MessageLevel
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, TagCreateReq, PostCreateReq
+    UpdatePostReq, PostCreateReq
 from schemas.tracks import Track
-from schemas.utils import form_to, FormTo
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
+from utils.https import render
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -289,8 +290,31 @@ async def test(
         request: Request,
         response: Response,
 ):
-    context = {'request': request}
-    return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
+    # context = {'request': request}
+
+    # messages = [
+    #     Message.SUCCESS.write("새로고침", level=MessageLevel.SUCCESS),
+    #     Message.CREATE.write("post", level=MessageLevel.INFO),
+    #     Message.DELETE.write("post", level=MessageLevel.ERROR)
+    # ]
+
+    # return render(request, context=context, status_code=status.HTTP_204_NO_CONTENT,
+    return render(request, status_code=status.HTTP_204_NO_CONTENT,
+                  # hx_trigger="postsChanged",
+                  hx_trigger=["postsChanged"],
+                  # messages=messages
+                  messages=Message.SUCCESS.write("새로고침", level=MessageLevel.SUCCESS),
+                  )
+    response.status_code = status.HTTP_204_NO_CONTENT
+    response.headers["HX-Trigger"] = json.dumps({
+        "postsChanged": None,
+        # "showMessage": Message.CREATE.write("포스트", level=MessageLevel.INFO)['text'],
+        "messages": messages
+    })
+
+    return response
+
+    # return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
 
 
 @app.post("/test/post", )
@@ -1111,14 +1135,15 @@ async def pic_new_post(
         # response.headers["HX-Trigger"] = "postsChanged"
         response.headers["HX-Trigger"] = json.dumps({
             "postsChanged": None,
-            "showMessage": f"post({post.id}) added."
+            # "showMessage": f"post({post.id}) added."
+            "showMessage": Message.CREATE.write("포스트", level=MessageLevel.INFO)['text']
         })
         return response
 
     except Exception as e:
         # TODO: 템플릿 에러 처리.
         print(f"e  >> {e}")
-        
+
         raise e
 
     # response.status_code = 204
