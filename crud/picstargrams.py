@@ -173,10 +173,8 @@ def create_post(data: dict):
             tags = []
             for tag_data in data['tags']:
                 if tag := get_tag_by_name(tag_data['name']):
-                    print(f"  >> 있는 태그")
                     tags.append(tag)
                 else:
-                    print(f"  >> 없는 태그")
                     tags.append(create_tag(tag_data))
 
             data['tags'] = tags

@@ -51,10 +51,14 @@
                     integrity="sha384-tvG/2mnCFmGQzYC1Oh3qxQ7CkQ9kMzYjWZSNtrRZygHPDDqottzEJsqS4oUVodhW"
                     crossorigin="anonymous">
             </script>
-            <script>
-                htmx.config.useTemplateFragments = true; // table row 조작을 위한 설정
-                // 없으면 htmx-swap 에러가 남 : htmx.org@1.6.1:1 Uncaught TypeError: e.querySelectorAll is not a function
-            </script>
+            <!-- hyperscript for .selected -->
+            <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
+            {#            <meta name="htmx-config" content='{"useTemplateFragments":"true"}'>#}
+
+            {#            <script>#}
+            {#htmx.config.useTemplateFragments = true; // oob 세팅#}
+            {#                // 없으면 htmx-swap 에러가 남 : htmx.org@1.6.1:1 Uncaught TypeError: e.querySelectorAll is not a function#}
+            {#            </script>#}
             <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
             <!-- hx-swap에 swap:1s 를 달면, transition이 적용되도록-->
             <style>
@@ -87,7 +91,31 @@
     {% block nav_top %}
         <header class="nav-top">
             <div class="wrapper">
-                <h1 class="logo">Picstargram</h1>
+                <h1 class="logo me-auto">Picstargram</h1>
+                <ul class="list-unstyled m-0
+                d-flex align-items-center gap-1 gap-md-3
+                me-2"
+                    style="height: 40px;"
+                >
+                    <li>
+                        {#<a hx-get="{{ url_for('pic_hx_form', form_name='user_login') }} hx-target="#dialog">#}
+                        <a hx-get="{{ url_for('pic_hx_form') }}?user-login=true" hx-target="#dialog">
+                            로그인
+                        </a>
+                    </li>
+                    <li>
+                        {#<a hx-get="{{ url_for('pic_hx_form', form_name='user_register') }}" hx-target="#dialog">#}
+                        <a hx-get="{{ url_for('pic_hx_form') }}?user-register" hx-target="#dialog">
+                            회원가입
+                        </a>
+                    </li>
+                    <li>
+                        {#<a hx-get="{{ url_for('pic_hx_form', form_name='user_register') }}" hx-target="#dialog">#}
+                        <a hx-get="{{ url_for('pic_hx_form') }}?user-login-or-register" hx-target="#dialog">
+                            로그인/회원가입
+                        </a>
+                    </li>
+                </ul>
                 <div class="form-group search">
                     <input type="search" class="form-control" id="seach" placeholder="검색">
                 </div>
@@ -95,7 +123,11 @@
         </header>
     {% endblock nav_top %}
 
-    {% include 'picstargram/_page_nav_bottom.html' %}
+    {% if user %}
+    {% else %}
+        {% include 'picstargram/_page_nav_bottom.html' %}
+
+    {% endif %}
 
     {% block content %}{% endblock content %}
 
@@ -121,29 +153,30 @@
     </div>
 
     <!-- toast -->
-{#    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1031">#}
-{#        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">#}
-{#            <div class="d-flex">#}
-{#                <div id="toast-body" class="toast-body">#}
-{#                </div>#}
-{#                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>#}
-{#            </div>#}
-{#        </div>#}
-{#    </div>#}
+    {#    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1031">#}
+    {#        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">#}
+    {#            <div class="d-flex">#}
+    {#                <div id="toast-body" class="toast-body">#}
+    {#                </div>#}
+    {#                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>#}
+    {#            </div>#}
+    {#        </div>#}
+    {#    </div>#}
 
-    <!-- toast stacking -->
+    {#<!-- toast stacking -->
     <div data-toast-container class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1031;">
-
         <!-- template for deepcopy -->
         <div data-toast-template class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div data-toast-body class="toast-body"></div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
             </div>
         </div>
+    </div>#}
 
-    </div>
-
+    <!-- toasts stacking oob용 template -->
+    {% include 'picstargram/_toasts.html' %}
 
     {# 공통 #}
     {% block script %}

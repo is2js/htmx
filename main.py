@@ -5,7 +5,7 @@ import pathlib
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 
-from fastapi import Depends, FastAPI, Header, Request, UploadFile
+from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 
@@ -299,7 +299,8 @@ async def test(
     # ]
 
     # return render(request, context=context, status_code=status.HTTP_204_NO_CONTENT,
-    return render(request, status_code=status.HTTP_204_NO_CONTENT,
+    # return render(request, status_code=status.HTTP_204_NO_CONTENT,
+    return render(request, template_name="picstargram/_empty.html", status_code=200,
                   # hx_trigger="postsChanged",
                   hx_trigger=["postsChanged"],
                   # messages=messages
@@ -818,7 +819,16 @@ async def pic_update_post(
             'request': request,
             'post': post,
         }
-        return templates.TemplateResponse("picstargram/post/partials/post.html", context)
+        # return templates.TemplateResponse("picstargram/post/partials/post.html", context)
+        return render(
+            request,
+            template_name="picstargram/post/partials/post.html",
+            context=context,
+            # messages=[Message.UPDATE.write("post")],
+            oobs=[
+                ('picstargram/_toasts.html', dict(messages=[Message.UPDATE.write("post")])),
+            ]
+        )
 
     return post
 
@@ -857,7 +867,8 @@ async def pic_delete_post(
         context = {
             'request': request
         }
-        return templates.TemplateResponse("picstargram/_empty.html", context)
+        return render(request, context=context, messages=[Message.DELETE.write("post", MessageLevel.ERROR)])
+        # return templates.TemplateResponse("picstargram/_empty.html", context)
 
     return "Post 삭제에 성공했습니다."
 
@@ -955,7 +966,7 @@ async def pic_create_like(
 
 
 # TODO: 나중에 로그인 + db 구현후 path param으로 옮겨주기
-# @app.post("/posts/{post_id}/likes", response_model=Union[LikeSchema, str], status_code=201) 
+# @app.post("/posts/{post_id}/likes", response_model=Union[LikeSchema, str], status_code=201)
 @app.post("/posts/likes", response_model=Union[LikeSchema, str], status_code=201)
 async def pic_create_or_delete_like(
         request: Request,
@@ -1093,15 +1104,49 @@ async def pic_hx_show_posts(
     return templates.TemplateResponse("picstargram/post/partials/posts.html", context)
 
 
-@app.get("/picstargram/form/posts/create", response_class=HTMLResponse)
-async def pic_hx_form_post_create(
+# @app.get("/picstargram/form/posts/create", response_class=HTMLResponse)
+# async def pic_hx_form_post_create(
+#         request: Request,
+#         hx_request: Optional[str] = Header(None),
+# ):
+#     context = {
+#         'request': request,
+#     }
+#     return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
+
+# @app.get("/picstargram/form/{form_name}", response_class=HTMLResponse)
+@app.get("/picstargram/form", response_class=HTMLResponse)
+async def pic_hx_form(
         request: Request,
+        # form_name: str,
         hx_request: Optional[str] = Header(None),
 ):
     context = {
         'request': request,
     }
-    return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
+
+    qp = request.query_params
+    # qp  >> post-create=
+
+    # if form_name == 'post_create':
+    if any(name in qp for name in ['post-create', 'post_create']):
+        return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
+    # elif form_name == 'user_register':
+    elif any(name in qp for name in ['user-register', 'user_register']):
+        return templates.TemplateResponse("picstargram/user/partials/register_form.html", context)
+    # elif form_name == 'user_login':
+    elif any(name in qp for name in ['user-login', 'user_login']):
+        return templates.TemplateResponse("picstargram/user/partials/login_form.html", context)
+
+    elif any(name in qp for name in ['user-login-or-register', 'user_login_or_register']):
+        return templates.TemplateResponse("picstargram/user/partials/login_or_register_form.html", context)
+    elif any(name in qp for name in ['user-login-body', 'user_login_body']):
+        return templates.TemplateResponse("picstargram/user/partials/login_or_register_form_login_part.html", context)
+    elif any(name in qp for name in ['user-register-body', 'user_register_body']):
+        return templates.TemplateResponse("picstargram/user/partials/login_or_register_form_register_part.html", context)
+
+    else:
+        return '준비되지 않은 modal입니다.'
 
 
 @app.post("/picstargram/posts/new")
@@ -1129,6 +1174,13 @@ async def pic_new_post(
         # data  >> {'content': 'a', 'tags': [{'name': 'a'}, {'name': 'b'}, {'name': 'v'}], 'image_url': URL('http://localhost:8000/uploads/images/post-0001.jpeg')}
 
         post = create_post(data)
+
+        # 4) render함수로 처리한다.
+        # return render(request, status_code=status.HTTP_204_NO_CONTENT,
+        return render(request, "",
+                      hx_trigger=["postsChanged"],
+                      messages=[Message.CREATE.write("포스트", level=MessageLevel.INFO)]
+                      )
 
         # 3) temaplate에서는 생성 성공시 list 화면으로 redirect한다. => htmx를 이용해 Nocontent + Hx-Trigger를 응답한다.
         response.status_code = status.HTTP_204_NO_CONTENT
@@ -1171,3 +1223,27 @@ async def pic_users(
 ):
     context = {'request': request}
     return templates.TemplateResponse("picstargram/user/user.html", context)
+
+
+@app.get("/register")
+async def pic_register(
+        request: Request,
+        response: Response,
+        hx_request: Optional[str] = Header(None)
+):
+    context = {
+        'request': request,
+    }
+    return render(request, "picstargram/register.html", context)
+
+
+@app.get("/login")
+async def pic_login(
+        request: Request,
+        response: Response,
+        hx_request: Optional[str] = Header(None)
+):
+    context = {
+        'request': request,
+    }
+    return render(request, "picstargram/login.html", context)

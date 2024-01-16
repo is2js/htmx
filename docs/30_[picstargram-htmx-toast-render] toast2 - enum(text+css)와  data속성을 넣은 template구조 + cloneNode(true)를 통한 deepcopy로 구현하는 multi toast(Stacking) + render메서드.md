@@ -204,7 +204,7 @@
     })();
     
     ```
-    ![img.png](99.png)
+    ![img.png](../images/99.png)
     - **close버튼을 `.btn-close.white`를 추가해서 하얀색으로 만들어준다. 현재 문제는 메세지가 한꺼번에 동시에 뜸.**
     ```html
     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>

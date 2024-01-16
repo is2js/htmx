@@ -14,12 +14,12 @@
     {%- set btn_height = kwargs.get('btn_height', '50px;') -%}
     {%- set btn_font_color = kwargs.get('btn_font_color', '#fff;') -%}
     <style>
-        .preview-container {
+        .{{name}}-container {
             width: {{ width }};
             height: {{ height }};
         }
 
-        .preview-container .preview-wrapper {
+        .{{name}}-container .{{name}}-wrapper {
             width: 100%;
             height: calc({{ height }} * 0.85);
             border: 2px dashed #c2cdda;
@@ -29,20 +29,20 @@
             overflow: hidden;
         }
 
-        .preview-wrapper.active {
+        .{{name}}-wrapper.active {
             border: none;
         }
 
-        .preview-wrapper #preview-img {
+        .{{name}}-wrapper #{{name}}-img {
             display: {{ 'block' if src else 'none'}};
         }
 
-        .preview-wrapper .icon {
+        .{{name}}-wrapper .icon {
             font-size: 100px;
             color: #c2cdda;
         }
 
-        .preview-wrapper #cancel-btn {
+        .{{name}}-wrapper #cancel-btn {
             position: absolute;
             top: 10px;
             right: 10px;
@@ -55,21 +55,21 @@
             display: none;
         }
 
-        .preview-wrapper.active:hover #cancel-btn {
+        .{{name}}-wrapper.active:hover #cancel-btn {
             display: block;
         }
 
-        .preview-wrapper #cancel-btn:hover {
+        .{{name}}-wrapper #cancel-btn:hover {
             color: #d74f73;
         }
 
-        .preview-wrapper .text {
+        .{{name}}-wrapper .text {
             font-size: 15px;
             font-weight: 500;
             color: #c2cdda;
         }
 
-        .preview-wrapper .file-name {
+        .{{name}}-wrapper .file-name {
             position: absolute;
             bottom: 0;
 
@@ -83,11 +83,11 @@
             display: none;
         }
 
-        .preview-wrapper.active:hover .file-name {
+        .{{name}}-wrapper.active:hover .file-name {
             display: block;
         }
 
-        .preview-container #custom-btn {
+        .{{name}}-container #custom-btn {
             margin-top: {{ btn_margin_top }};
             width: 100%;
             height: {{ btn_height }};
@@ -107,10 +107,10 @@
         }
     </style>
 
-    <div class="preview-container mx-auto text-center form-group  {{ _class }}">
-        <div class="preview-wrapper d-flex justify-content-center align-items-center position-relative">
+    <div class="{{name}}-container mx-auto text-center form-group  {{ _class }}">
+        <div class="{{name}}-wrapper d-flex justify-content-center align-items-center position-relative">
             <div class="image position-absolute w-100 h-100 {{ preview_div_class }}">
-                <img id="preview-img" class="w-100 h-100 object-fit-cover" src="{{ src }}" alt="">
+                <img id="{{name}}-img" class="w-100 h-100 object-fit-cover" src="{{ src }}" alt="">
             </div>
             <div class="content {{ content_div_class }}">
                 <div class="icon"><i class="bi bi-cloud-upload-fill"></i></div>
@@ -125,11 +125,11 @@
     </div>
 
     <script>
-        var previewWrapperDiv = document.querySelector(".preview-wrapper");
+        var previewWrapperDiv = document.querySelector(".{{name}}-wrapper");
         var cancelBtn = document.querySelector("#cancel-btn");
         var defaultBtn = document.querySelector("#default-btn");
         var customBtn = document.querySelector("#custom-btn");
-        var previewImg = document.querySelector("#preview-img");
+        var previewImg = document.querySelector("#{{name}}-img");
         var filenameDiv = document.querySelector(".file-name");
         var regExp = /[0-9a-zA-Z가-힣\^\&\'\@\{\}\[\]\,\$\=\!\-\#\(\)\.\%\+\~\_ ]+$/;
 
@@ -302,15 +302,17 @@
     {%- set _class = kwargs.get('_class', '') -%}
     {%- set input_class = kwargs.get('input_class', '') -%}
     {%- set two_col_size = kwargs.get('two_col_size', 'md') -%}
+    {%- set left_col_size = kwargs.get('left_col_size', '2') | int -%}
+
 
     <style>
-        .body-container {
+        .{{name}}-container {
             width: {{ width }};
             display: flex;
             align-items: center;
         }
 
-        .body-container textarea[name="{{name}}"] {
+        .{{name}}-container textarea[name="{{name}}"] {
             border-radius: 0.5rem;
             padding: 1rem 1.2rem;
             margin: 0.5rem 0;
@@ -319,11 +321,11 @@
             resize: vertical;
         }
     </style>
-    <div class="body-container mx-auto text-center form-group row {{ _class }}">
-        <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-2 col-form-label fw-bold {{ label_class }}">
+    <div class="{{name}}-container mx-auto text-center form-group row {{ _class }}">
+        <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-{{ left_col_size }} col-form-label fw-bold {{ label_class }} text-start">
             {{- label +': ' -}}
         </label>
-        <div class="col-{{ two_col_size }}-10">
+        <div class="col-{{ two_col_size }}-{{ 12 - left_col_size }}">
             <textarea rows="3" cols="5"
                       class="form-control {{ input_class }}"
                       name="{{ name }}"
@@ -335,6 +337,52 @@
 
 {% endmacro %}
 
+
+{% macro inline_input() %}
+    {%- set bg_color = kwargs.get('bg_color', '#e8f0fe') -%}
+    {%- set width = kwargs.get('width', '100%;max-width: 500px;') -%}
+    {%- set type = kwargs.get('type', 'text') -%}
+    {%- set label = kwargs.get('label', 'email') -%}
+    {%- set label_class = kwargs.get('label_class', '') -%}
+    {%- set name = kwargs.get('name', 'email') -%}
+    {%- set value = kwargs.get('value', '') -%}
+    {%- set required = 'required' if kwargs.get('required', False) else '' -%}
+    {%- set _class = kwargs.get('_class', '') -%}
+    {%- set input_class = kwargs.get('input_class', '') -%}
+    {%- set two_col_size = kwargs.get('two_col_size', 'md') -%}
+    {%- set left_col_size = kwargs.get('left_col_size', '2') | int -%}
+
+    <style>
+        .{{ name }}-container {
+            width: {{ width }};
+            display: flex;
+            align-items: center;
+        }
+
+        .{{ name }}-container input[name="{{name}}"] {
+            border-radius: 0.5rem;
+            padding: 1rem 1.2rem;
+            margin: 0.5rem 0;
+            background-color: {{ bg_color }};
+            border: {{ bg_color }};
+            resize: vertical;
+        }
+    </style>
+    <div class="{{ name }}-container mx-auto text-center form-group row {{ _class }}">
+        <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-{{ left_col_size }} col-form-label fw-bold {{ label_class }} text-start">
+            {{- label +': ' -}}
+        </label>
+        <div class="col-{{ two_col_size }}-{{ 12 - left_col_size }}">
+            <input type="{{ type }}"
+                   class="form-control {{ input_class }}"
+                   name="{{ name }}"
+                   placeholder="{{ label }}을 입력하세요."
+                    {{ required }}
+                   value="{{- value -}}">
+        </div>
+    </div>
+
+{% endmacro %}
 
 
 {#white_tag_names='["예시", "태그"]',#}
@@ -351,16 +399,16 @@
     {%- set _class = kwargs.get('_class', 'mb-5') -%}
     {%- set input_class = kwargs.get('input_class', '') -%}
     {%- set two_col_size = kwargs.get('two_col_size', 'md') -%}
-
+    {%- set left_col_size = kwargs.get('left_col_size', '2') | int -%}
 
     <style>
-        .tag-container {
+        .{{ name }}-container {
             width: {{ width }};
             display: flex;
             align-items: center;
         }
 
-        .tag-container input[name='{{name}}'] {
+        .{{ name }}-container input[name='{{name}}'] {
             width: 100%;
         }
 
@@ -376,11 +424,11 @@
         }
     </style>
 
-    <div class="tag-container mx-auto text-center form-group row {{ _class }}">
-        <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-2 col-form-label fw-bold {{ label_class }}">
+    <div class="{{ name }}-container mx-auto text-center form-group row {{ _class }}">
+        <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-{{ left_col_size }} col-form-label fw-bold {{ label_class }} text-start">
             {{- label +': ' -}}
         </label>
-        <div class="col-{{ two_col_size }}-10">
+        <div class="col-{{ two_col_size }}-{{ 12 - left_col_size }}">
             <input hidden name="{{ name }}"
                    class="custom-tags form-control form-control-sm form-control-solid {{ input_class }}"
                    placeholder="{{ label }}를 입력해주세요."
@@ -405,26 +453,26 @@
 
         // tag added callback
         function onAddTag(e) {
-            console.log("onAddTag: ", e.detail);
-            console.log("original input value: ", tagsInput.value)
+            {#console.log("onAddTag: ", e.detail);#}
+            {#console.log("original input value: ", tagsInput.value)#}
             //tagify.off('add', onAddTag) // exmaple of removing a custom Tagify event
         }
 
         // tag remvoed callback
         function onRemoveTag(e) {
-            console.log(e.detail);
-            console.log("tagify instance value:", tagify.value)
+            {#console.log(e.detail);#}
+            {#console.log("tagify instance value:", tagify.value)#}
         }
 
         // on character(s) added/removed (user is typing/devaring)
         function onInput(e) {
-            console.log(e.detail);
-            console.log("onInput: ", e.detail);
+            {#console.log(e.detail);#}
+            {#console.log("onInput: ", e.detail);#}
         }
 
         // invalid tag added callback
         function onInvalidTag(e) {
-            console.log("onInvalidTag: ", e.detail);
+            {#console.log("onInvalidTag: ", e.detail);#}
         }
     </script>
 {%- endmacro %}
@@ -438,7 +486,7 @@
     {%- set btn_class = kwargs.get('btn_class', 'fs-6 mt-3') -%}
     {%- set btn_size = kwargs.get('btn_size', 'sm') -%}
     {%- set btn_bg_color = kwargs.get('btn_bg_color', 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%);') -%}
-    {%- set btn_text = kwargs.get(btn_text, '게시하기') -%}
+    {%- set btn_text = kwargs.get('btn_text', '게시하기') -%}
     {%- set btn_font_color = kwargs.get('btn_font_color', '#fff;') -%}
     {%- set has_cancel_btn = kwargs.get('has_cancel_btn', False) -%}
     {%- set btn_gap = kwargs.get('btn_gap', '3') -%}
