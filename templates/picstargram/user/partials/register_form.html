@@ -1,18 +1,22 @@
 {% import 'macros/_form.html' as _form %}
+<div class="modal-content">
 
-<form class="modal-content"
-      hx-trigger="submit"
-        {#hx-post="{{ url_for('pic_new_post') }}"#}
-        {#hx-encoding="multipart/form-data"#}
->
     <!-- header -->
-    <div class="modal-header">
-        <h1 class="modal-title fs-5" id="modalLabel">회원가입</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-header border-bottom-0">
+        <h1 class="modal-title fs-5 fw-bold mx-auto" id="modalLabel">
+            회원가입
+        </h1>
+        <button type="button" class="btn-close position-absolute end-0 me-2" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
+    <!-- body -->
     <div class="modal-body">
-        <!-- email -->
-        {{ _form.inline_input(
+        <form
+                hx-trigger="submit"
+                {#hx-post="{{ url_for('pic_new_post') }}"#}
+                {#hx-encoding="multipart/form-data"#}
+        >
+            <!-- email -->
+            {{ _form.inline_input(
             type="text",
             bg_color='#e8f0fe',
             width='100%;max-width:500px;',
@@ -26,8 +30,8 @@
             two_col_size='sm',
             left_col_size='4'
         ) }}
-        <!-- username -->
-        {{ _form.inline_input(
+            <!-- username -->
+            {{ _form.inline_input(
             type="text",
             bg_color='#e8f0fe',
             width='100%;max-width:500px;',
@@ -41,8 +45,8 @@
             two_col_size='sm',
             left_col_size='4'
         ) }}
-        <!-- password -->
-        {{ _form.inline_input(
+            <!-- password -->
+            {{ _form.inline_input(
             type="password",
             bg_color='#e8f0fe',
             width='100%;max-width:500px;',
@@ -57,7 +61,7 @@
             left_col_size='4'
         ) }}
 
-        {{ _form.inline_input(
+            {{ _form.inline_input(
             type="password",
             bg_color='#e8f0fe',
             width='100%;max-width:500px;',
@@ -72,8 +76,8 @@
             left_col_size='4'
         ) }}
 
-        <!-- submit -->
-        {{ _form.submit_btn(width = '100%;max-width: 500px;',
+            <!-- submit -->
+            {{ _form.submit_btn(width = '100%;max-width: 500px;',
             justify_content = 'center;',
             btn_width = 'auto;max-width: 200px;',
             btn_height = '50px;',
@@ -88,5 +92,6 @@
             cancel_btn_bg_color = '#fff',
             cancel_btn_font_color = 'black'
             ) }}
+        </form>
     </div>
-</form>
+</div>

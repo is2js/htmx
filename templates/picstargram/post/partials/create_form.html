@@ -14,17 +14,20 @@
 {#      method="post"#}
 {#      enctype="multipart/form-data"#}
 {# htmx render form은 hx로 보내야 request -> response가 정상적으로 작동한다! #}
-<form class="modal-content"
-          hx-trigger="submit"
-          hx-post="{{ url_for('pic_new_post') }}"
-          hx-encoding="multipart/form-data"
->
+<div class="modal-content">
     <!-- header -->
-    <div class="modal-header">
-        <h1 class="modal-title fs-5" id="modalLabel">새 게시물 작성</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-header border-bottom-0">
+        <h1 class="modal-title fs-5 fw-bold mx-auto" id="modalLabel">
+            새 게시물 작성
+        </h1>
+        <button type="button" class="btn-close position-absolute end-0 me-2" data-bs-dismiss="modal" aria-label="Close"></button>
     </div>
+    <!-- body -->
     <div class="modal-body">
+        <form hx-trigger="submit"
+              hx-post="{{ url_for('pic_new_post') }}"
+              hx-encoding="multipart/form-data"
+        >
         {#        src=request.url_for("uploads", path="images/post-0001.jpeg"),#}
         {{ _form.inline_preview_input(
                     width='100%;max-width:500px;',
@@ -85,6 +88,7 @@
                     cancel_btn_bg_color = '#fff',
                     cancel_btn_font_color = 'black'
                     ) }}
+        </form>
     </div>
-</form>
+</div>
 {#{% endblock %}#}

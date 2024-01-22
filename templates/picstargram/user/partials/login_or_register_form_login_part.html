@@ -1,0 +1,59 @@
+{% import 'macros/_form.html' as _form %}
+{#        class="opacity-0"#}
+<fade-in style="opacity:0;"
+         _="on load transition my opacity to 1 over 0.2 seconds">
+    <form hx-trigger="submit"
+            {#hx-post="{{ url_for('pic_new_post') }}"#}
+            {#hx-encoding="multipart/form-data"#}
+    >
+        <!-- email -->
+        {{ _form.inline_input(
+                type="text",
+                bg_color='#e8f0fe',
+                width='100%;max-width:500px;',
+                label='email',
+                label_class='',
+                name='email',
+                value='',
+                _class='mb-3',
+                input_class='',
+                required=True,
+                two_col_size='sm',
+                left_col_size='4'
+            ) }}
+
+        <!-- password -->
+        {{ _form.inline_input(
+                type="password",
+                bg_color='#e8f0fe',
+                width='100%;max-width:500px;',
+                label='비밀번호',
+                label_class='',
+                name='password1',
+                value='',
+                _class='mb-3',
+                input_class='',
+                required=True,
+                two_col_size='sm',
+                left_col_size='4'
+            ) }}
+
+
+        <!-- submit -->
+        {{ _form.submit_btn(width = '100%;max-width: 500px;',
+                justify_content = 'center;',
+                btn_width = 'auto;max-width: 200px;',
+                btn_height = '50px;',
+                btn_class =  'fs-6 mt-3',
+                btn_size =  'sm',
+                btn_bg_color = 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%);',
+                btn_text =  '로그인',
+                btn_font_color =  '#fff;',
+                has_cancel_btn = True,
+                btn_gap = '3',
+                cancel_btn_text =  '취소',
+                cancel_btn_bg_color = '#fff',
+                cancel_btn_font_color = 'black'
+                ) }}
+    </form>
+</fade-in>
