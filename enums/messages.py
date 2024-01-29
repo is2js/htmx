@@ -38,6 +38,7 @@ class Message(str, Enum):
     def write(
             self,
             entity: str,
+            text:str = None,
             level: MessageLevel = MessageLevel.INFO
     ):
         """
@@ -45,6 +46,8 @@ class Message(str, Enum):
         Out[2]: {'text': '포스트 생성을(를) 생성하였습니다.', 'css': 'text-white bg-danger'}
         """
         message_text, message_css = self.generate_text_and_css(entity, level)
+        if text:
+            message_text = text
 
         return {
             "text": message_text,

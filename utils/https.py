@@ -7,17 +7,18 @@ from starlette import status
 from starlette.responses import HTMLResponse, Response
 from starlette.templating import Jinja2Templates
 
-from enums.messages import Message
 from templatefilters import feed_time
 
 templates = Jinja2Templates(directory="templates")
 templates.env.filters['feed_time'] = feed_time  # 필터들도 main.py와 다르게 직접 추가해줘야한다.
 
 
-def render(request, template_name="", context: dict = {}, status_code: int = 200, cookies: dict = {},
+def render(request, template_name="", context: dict = {}, status_code: int = 200,
+           cookies: dict = None,
+           delete_cookies: list = None,
            hx_trigger: dict | str | List[str] = None,
            messages: dict | List[dict] = None,
-           oobs: List[tuple] = None
+           oobs: List[tuple] = None,
            ):
     # 추가context가 안들어오는 경우는 외부에서 안넣어줘도 된다.
     ctx = {
@@ -54,38 +55,21 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
     hx_trigger: dict = convert_hx_trigger_to_dict(hx_trigger)
     if not html_str:
         hx_trigger['noContent'] = True
+        # ...
     response.headers['HX-Trigger'] = json.dumps(hx_trigger)
 
-    # # messages를 삽입하려면, 기존 trigger들을 dict로 변환해야, message라는 또다른 HX-Trigger를 dict에 추가하여 -> 다시 json.dumps()로 string화
-    # # 1) 1개의 string  VS 2) 2개이상의 "{" json 시작  => 둘다 dict로 만들어야한다.
-    # # 3) 없는 경우 -> 빈 dict로 만들어야한다. -> .get( , {})로 해결
-    # # ==> 없는 경우 VS 있는 경우( 2개이상-명시쉬움 -> 나머지는 1개)형태로 조건문 순서를 설정한다.
-    # if messages:
-    #     # 없는 경우 -> {}
-    #     if hx_trigger := response.headers.get("HX-Trigger", {}):
-    #         # 2개이상인 경우 -> json이라서 load하여 dict로 변환
-    #         if hx_trigger.startswith("{"):
-    #             hx_trigger = json.loads(hx_trigger)
-    #         # 있는데 & 2개이상이 아닌 경우 -> 1개인 경우 -> value에 True를 집어넣는 dict로 변환
-    #         else:
-    #             hx_trigger = {hx_trigger: True}
-    #
-    #     # messages 1개만 오는 경우는 dict라서, list로 변환하여 삽입
-    #     hx_trigger["messages"] = [messages] if isinstance(messages, dict) else messages
-    #
-    #     # hx_trigger와 통합된 HX-Trigger를 새롭게 집어넣는다.
-    #     response.headers["HX-Trigger"] = json.dumps(hx_trigger)
-
     # 기본 darkmode 및 cookie관련
-    # response.set_cookie(key='darkmode', value=str(1))
-    # if len(cookies.keys()) > 0:
+    response.set_cookie(key='darkmode', value=str(1))
+
     # set httponly cookies
-    # for k, v in cookies.items():
-    #     response.set_cookie(key=k, value=v, httponly=True)
+    if cookies:
+        for k, v in cookies.items():
+            response.set_cookie(key=k, value=v, httponly=True)
 
     # delete coookies
-    # for key in request.cookies.keys():
-    #     response.delete_cookie(key)
+    if delete_cookies:
+        for key in delete_cookies:
+            response.delete_cookie(key)
 
     return response
 

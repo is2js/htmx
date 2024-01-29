@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import json
 import pathlib
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import List, Optional, Union
 
 from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
 
 from fastapi.templating import Jinja2Templates
@@ -18,13 +22,17 @@ from starlette.responses import Response, RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 import models
+from config import settings
 from database import SessionLocal, engine
 from enums.messages import Message, MessageLevel
+from exceptions.template_exceptions import BadRequestException
+from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, PostCreateReq
+    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
+from utils.auth import verify_password, decode_token
 from utils.https import render
 
 models.Base.metadata.create_all(bind=engine)
@@ -35,7 +43,7 @@ tracks_data = []
 from crud.picstargrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
     update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
-    update_tag, delete_tag
+    update_tag, delete_tag, get_user_by_username, get_user_by_email
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -243,7 +251,37 @@ async def init_movie_dict_to_db(db):
         print(f"[movie] {num_films} films already in DB.")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    title=settings.app_name,
+)
+
+
+@app.exception_handler(RequestValidationError)
+async def pydantic_422_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    custom middleware에서 안잡히는 pydantic 422 입력에러 -> raise customerror -> middleware
+    참고: https://stackoverflow.com/questions/58642528/displaying-of-fastapi-validation-errors-to-end-users
+    """
+    # return JSONResponse(
+    #     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    #     content=jsonable_encoder({"detail": exc.errors(), "Error": "Name field is missing"}),
+    # )
+    # reformatted_message = defaultdict(list)
+    reformatted_message = defaultdict(str)
+    for pydantic_error in exc.errors():
+        loc, msg = pydantic_error["loc"], pydantic_error["msg"]
+        filtered_loc = loc[1:] if loc[0] in ("body", "query", "path") else loc
+        field_string = ".".join(filtered_loc)  # nested fields with dot-notation
+        # reformatted_message[field_string].append('<li>' + msg + '</li>')
+        reformatted_message[field_string] += ('<li>' + msg + '</li>')
+    # {'email': ['value is not a valid email address: The part after the @-sign contains invalid characters: "\\".']})
+    # {'email': '<li>value is not a valid email address: The part after the @-sign contains invalid characters: "\\".</li'})
+
+    raise BadRequestException(f'''
+{", ".join(reformatted_message.keys())} 입력 에러(422)가 발생했습니다. 아래사항을 살펴주세요.<br/>
+{"".join(reformatted_message.values())}
+''')
 
 origins = [
     "http://localhost.tiangolo.com",
@@ -251,6 +289,8 @@ origins = [
     "http://localhost",
     "http://localhost:8080",
 ]
+
+app.add_middleware(AccessControl)
 app.add_middleware(
     CORSMiddleware,
     # allow_origins=origins,
@@ -1143,7 +1183,8 @@ async def pic_hx_form(
     elif any(name in qp for name in ['user-login-body', 'user_login_body']):
         return templates.TemplateResponse("picstargram/user/partials/login_or_register_form_login_part.html", context)
     elif any(name in qp for name in ['user-register-body', 'user_register_body']):
-        return templates.TemplateResponse("picstargram/user/partials/login_or_register_form_register_part.html", context)
+        return templates.TemplateResponse("picstargram/user/partials/login_or_register_form_register_part.html",
+                                          context)
 
     else:
         return '준비되지 않은 modal입니다.'
@@ -1225,25 +1266,80 @@ async def pic_users(
     return templates.TemplateResponse("picstargram/user/user.html", context)
 
 
-@app.get("/register")
-async def pic_register(
+@app.post("/picstargram/users/new")
+async def pic_new_user(
         request: Request,
         response: Response,
-        hx_request: Optional[str] = Header(None)
+        hx_request: Optional[str] = Header(None),
+        user_create_req: UserCreateReq = Depends(UserCreateReq.as_form),
 ):
+    data = user_create_req.model_dump()
+    # data  >> {'email': 'admin@gmail.com', 'username': 'user1', 'password': '321'}
+
+    # 검증1: 중복여부(email, username)
+    exists_email = get_user_by_email(data['email'])
+    if exists_email:
+        # return render(request, "", messages=[Message.FAIL.write('회원', text='이미 존재하는 email입니다.', level=MessageLevel.ERROR)])
+        raise BadRequestException("이미 존재하는 email입니다")
+    exists_username = get_user_by_username(data['username'])
+    if exists_username:
+        # return render(request, "",
+        #               messages=[Message.FAIL.write('회원', text='이미 존재하는 username입니다.', level=MessageLevel.ERROR)])
+        raise BadRequestException("이미 존재하는 username입니다.")
+
+    # 실 생성
+    user = create_user(data)
     context = {
         'request': request,
     }
-    return render(request, "picstargram/register.html", context)
+
+    return render(request, "", context,
+                  messages=[Message.CREATE.write(f'계정({user.email})')]
+                  )
 
 
-@app.get("/login")
-async def pic_login(
+@app.post("/picstargram/users/login")
+async def pic_login_user(
         request: Request,
         response: Response,
-        hx_request: Optional[str] = Header(None)
+        # hx_request: Optional[str] = Header(None),
+        user_login_req: UserLoginReq = Depends(UserLoginReq.as_form),
+
 ):
+    #### Schema Dump + 존재/비번검증 -> pic_get_token route로 이관 ####
+    # data: dict = user_login_req.model_dump()
+    # # 로그인 검증: user존재여부 -> input pw VS 존재user의 hashed_pw verify
+    # user = get_user_by_email(data['email'])
+    # if not user:
+    #     raise BadRequestException('가입되지 않은 email입니다.')
+    # if not verify_password(data['password'], user.hashed_password):
+    #     raise BadRequestException('비밀번호가 일치하지 않습니다.')
+    ####
+
+    token: dict = await pic_get_token(request, user_login_req)
+
     context = {
         'request': request,
     }
-    return render(request, "picstargram/login.html", context)
+
+    return render(request, "", context,
+                  cookies=token,
+                  messages=[Message.CREATE.write(entity=f"유저", text="로그인에 성공했습니다.")]
+                  )
+
+
+@app.post("/picstargram/get-token", response_model=Token)
+async def pic_get_token(
+        request: Request,
+        user_login_req: UserLoginReq,
+):
+    data: dict = user_login_req.model_dump()
+
+    # 로그인 검증: user존재여부 -> input pw VS 존재user의 hashed_pw verify
+    user: UserSchema = get_user_by_email(data['email'])
+    if not user:
+        raise BadRequestException('가입되지 않은 email입니다.')
+    if not verify_password(data['password'], user.hashed_password):
+        raise BadRequestException('비밀번호가 일치하지 않습니다.')
+
+    return user.get_token()

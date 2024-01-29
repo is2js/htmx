@@ -17,6 +17,8 @@ import_target('schemas\picstargrams.py', '*')
 # from schemas.picstargrams import *
 
 import_target('enums/messages.py', '*')
+import_target('utils/auth.py', '*')
+import_target('/config.py', 'settings')
 
 
 # 3) 폴더/*.py의 모든 모듈들을 import하기

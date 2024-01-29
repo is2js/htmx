@@ -2,7 +2,7 @@
 <fade-in style="opacity: 0" _="on load transition my opacity to 1 over 0.2 seconds">
 <form
         hx-trigger="submit"
-        {#hx-post="{{ url_for('pic_new_post') }}"#}
+        hx-post="{{ url_for('pic_new_user') }}"
         {#hx-encoding="multipart/form-data"#}
 >
     <!-- email -->

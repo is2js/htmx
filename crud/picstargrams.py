@@ -2,6 +2,7 @@
 import datetime
 
 from schemas.picstargrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema, PostTagSchema
+from utils.auth import hash_password
 
 users, comments, posts, likes, tags, post_tags = [], [], [], [], [], []
 
@@ -45,18 +46,54 @@ def get_user(user_id: int, with_posts: bool = False, with_comments: bool = False
     return user
 
 
-def create_user(user_schema: UserSchema):
-    try:
-        # id 부여
-        user_schema.id = find_max_id(users) + 1
-        # created_at, updated_at 부여
-        user_schema.created_at = user_schema.updated_at = datetime.datetime.now()
+def get_user_by_username(username: str, with_posts: bool = False, with_comments: bool = False):
+    user = next((user for user in users if user.username == username), None)
+    if not user:
+        return None
 
-        users.append(user_schema)
+    if with_posts:
+        user.posts = [post for post in posts if post.user_id == user.id]
+
+    if with_comments:
+        user.comments = [comment for comment in comments if comment.user_id == user.id]
+
+    return user
+
+def get_user_by_email(email: str, with_posts: bool = False, with_comments: bool = False):
+    user = next((user for user in users if user.email == email), None)
+    if not user:
+        return None
+
+    if with_posts:
+        user.posts = [post for post in posts if post.user_id == user.id]
+
+    if with_comments:
+        user.comments = [comment for comment in comments if comment.user_id == user.id]
+
+    return user
+
+
+# def create_user(user_schema: UserSchema):
+def create_user(data: dict):
+    # 해쉬해서 Schema(추후 model의 생성자)에 넣어주기
+    password = data.pop('password')
+    data['hashed_password'] = hash_password(password)
+
+    try:
+
+        user = UserSchema(**data)
+
+        # id 부여
+        user.id = find_max_id(users) + 1
+        # created_at, updated_at 부여
+        user.created_at = user.updated_at = datetime.datetime.now()
+
+        users.append(user)
+
     except Exception as e:
         raise e
 
-    return user_schema
+    return user
 
 
 def update_user(user_id: int, user_schema: UserSchema):

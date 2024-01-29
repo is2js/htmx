@@ -3,7 +3,7 @@
 <fade-in style="opacity:0;"
          _="on load transition my opacity to 1 over 0.2 seconds">
     <form hx-trigger="submit"
-            {#hx-post="{{ url_for('pic_new_post') }}"#}
+            hx-post="{{ url_for('pic_login_user') }}"
             {#hx-encoding="multipart/form-data"#}
     >
         <!-- email -->
@@ -29,7 +29,7 @@
                 width='100%;max-width:500px;',
                 label='비밀번호',
                 label_class='',
-                name='password1',
+                name='password',
                 value='',
                 _class='mb-3',
                 input_class='',
