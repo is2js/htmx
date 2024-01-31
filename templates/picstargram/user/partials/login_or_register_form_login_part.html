@@ -2,8 +2,9 @@
 {#        class="opacity-0"#}
 <fade-in style="opacity:0;"
          _="on load transition my opacity to 1 over 0.2 seconds">
+    {{ request.query_params.get('next') }}
     <form hx-trigger="submit"
-            hx-post="{{ url_for('pic_login_user') }}"
+            hx-post="{{ url_for('pic_login_user').include_query_params(next=request.query_params.get('next', ''))}}"
             {#hx-encoding="multipart/form-data"#}
     >
         <!-- email -->

@@ -11,7 +11,7 @@
     <div class="modal-body">
         <form
                 hx-trigger="submit"
-                hx-post="{{ url_for('pic_login_user') }}"
+                hx-post="{{ url_for('pic_login_user').include_query_params(next=request.query_params.get('next', ''))}}"
                 {#hx-encoding="multipart/form-data"#}
         >
             <!-- email -->

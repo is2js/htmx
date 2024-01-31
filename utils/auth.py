@@ -47,10 +47,10 @@ def decode_token(token: str):
     """
     """
     token = token.replace("Bearer ", "")
-    try:
-        payload = jwt.decode(token, key=settings.jwt_secret_key, algorithms=settings.jwt_algorithm)
-        return payload
-    except ExpiredSignatureError:
-        raise NotAuthorized("토큰이 만료되었습니다. 다시 로그인 해주세요.")
-    except JWTError:
-        raise NotAuthorized("토큰 정보가 정확하지 않습니다. 올바른 경로로 로그인 해주세요.")
+    # try:
+    payload = jwt.decode(token, key=settings.jwt_secret_key, algorithms=settings.jwt_algorithm)
+    return payload
+    # except ExpiredSignatureError:
+    #     raise NotAuthorized("토큰이 만료되었습니다. 다시 로그인 해주세요.")
+    # except JWTError:
+    #     raise NotAuthorized("토큰 정보가 정확하지 않습니다. 올바른 경로로 로그인 해주세요.")

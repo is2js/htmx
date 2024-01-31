@@ -12,6 +12,7 @@
 {#    <button class="btn btn-sm" hx-get="{{ url_for('test') }}" hx-target="#main">#}
     <button class="btn btn-sm" hx-get="{{ url_for('test') }}" hx-swap="none">
         새로고침
+    {{ request.query_params.get('next') }}
     </button>
 
     <div id="main"></div>

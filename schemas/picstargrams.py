@@ -14,12 +14,12 @@ from utils.auth import create_token
 class UserSchema(BaseModel):
     id: Optional[int] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
     email: str  # 추가
-    hashed_password: str # 추가
+    hashed_password: str  # 추가
     username: str
     image_url: Optional[str] = None
 
-    created_at: Optional[datetime.datetime] = None # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
-    updated_at: Optional[datetime.datetime] = None # None을 줘야, 안들어와도 허용된다.
+    created_at: Optional[datetime.datetime] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    updated_at: Optional[datetime.datetime] = None  # None을 줘야, 안들어와도 허용된다.
 
     posts: Optional[List['PostSchema']] = []  # None으로 주면, docs에서 예시 전체가 뜨므로, []로 줘서 []만 뜨게 한다.
     comments: Optional[List['CommentSchema']] = []  # None으로 주면, docs에서 예시 전체가 뜨므로, []로 줘서 []만 뜨게 한다.
@@ -27,20 +27,51 @@ class UserSchema(BaseModel):
     def get_token(self):
         "TODO: sqlalchemy User 모델 이관"
         return {
-            "access_token": create_token(
+            "access_token": "Bearer " + create_token(
                 data=dict(
                     sub=str(self.id),
+                    email=self.email,
                     username=self.username,
                     image_url=self.image_url,
-                    #staff=self.is_admin),
+                    # staff=self.is_admin),
+                    # 그외 exp, iat iss는 create_token 내부에서
                 ),
                 delta=settings.access_token_expire_minutes,
             ),
-            "refresh_token": create_token(
-                data=dict(sub=str(self.id)),
+            "refresh_token": "Bearer " + create_token(
+                data=dict(sub=str(self.id)), # 그외 exp, iat iss는 create_token 내부에서
                 delta=settings.refresh_token_expire_minutes,
             ),
         }
+
+    def refresh_token(self, refresh_token: str, iat: str):
+        "TODO: sqlalchemy User 모델 이관"
+        now = int(datetime.datetime.utcnow().timestamp())
+        iat = int(iat)
+
+        # refresh 발급기간이 만료기간(delta)의 1/2을 넘어선다면, refresh token도 같이 발급
+        if now - iat >= settings.refresh_token_expire_minutes * 60 / 2:
+            print(f"refresh의 1/2을 지나서, 둘다 재발급 ")
+            return self.get_token() # refresh 절반이 지나면, 둘다 새로 발급
+        # 아니라면, access_token만 재발급
+        else:
+            return {
+                "access_token": "Bearer " + create_token(
+                    data=dict(
+                        sub=str(self.id),
+                        email=self.email,
+                        username=self.username,
+                        image_url=self.image_url,
+                        # staff=self.is_admin),
+                        # 그외 exp, iat iss는 create_token 내부에서
+                    ),
+                    delta=settings.access_token_expire_minutes,
+                ),
+                "refresh_token": refresh_token,
+            }
+
+
+
 class UserCreateReq(BaseModel):
     email: str
     username: str
@@ -96,8 +127,19 @@ class Token(BaseModel):
     access_token: str
     refresh_token: str = None
 
+
 class RefreshToken(BaseModel):
     refresh_token: str
+
+
+class UserToken(BaseModel):
+    # id: int
+    id: int = Field(alias='sub')
+    email: EmailStr
+    # hashed_password: str
+    username: str
+    image_url: Optional[str] = None
+
 
 class CommentSchema(BaseModel):
     id: Optional[int] = None

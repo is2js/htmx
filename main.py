@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import json
 import pathlib
-import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from datetime import datetime
 from typing import List, Optional, Union
 
 from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query
@@ -18,12 +16,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response, RedirectResponse
+from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 
 import models
 from config import settings
 from database import SessionLocal, engine
+from decorators import login_required
 from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
@@ -32,8 +31,8 @@ from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSche
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
-from utils.auth import verify_password, decode_token
-from utils.https import render
+from utils.auth import verify_password
+from utils.https import render, redirect
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -283,6 +282,7 @@ async def pydantic_422_exception_handler(request: Request, exc: RequestValidatio
 {"".join(reformatted_message.values())}
 ''')
 
+
 origins = [
     "http://localhost.tiangolo.com",
     "https://localhost.tiangolo.com",
@@ -326,9 +326,10 @@ async def index(request: Request, response_class=HTMLResponse):
 
 
 @app.get("/test", )
+@login_required
 async def test(
         request: Request,
-        response: Response,
+        # response: Response,
 ):
     # context = {'request': request}
 
@@ -1158,23 +1159,22 @@ async def pic_hx_show_posts(
 @app.get("/picstargram/form", response_class=HTMLResponse)
 async def pic_hx_form(
         request: Request,
-        # form_name: str,
-        hx_request: Optional[str] = Header(None),
+        next_url: str = Query(None, alias='next')
 ):
+    # htmx modal body반환인데, 내부 ?next=를 넘겨서, 로그인 form에서 next를 추출할 수 있게 한다
+    request.query_params.__setattr__('next', next_url)
     context = {
         'request': request,
     }
 
+
     qp = request.query_params
     # qp  >> post-create=
 
-    # if form_name == 'post_create':
     if any(name in qp for name in ['post-create', 'post_create']):
         return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
-    # elif form_name == 'user_register':
     elif any(name in qp for name in ['user-register', 'user_register']):
         return templates.TemplateResponse("picstargram/user/partials/register_form.html", context)
-    # elif form_name == 'user_login':
     elif any(name in qp for name in ['user-login', 'user_login']):
         return templates.TemplateResponse("picstargram/user/partials/login_form.html", context)
 
@@ -1185,7 +1185,6 @@ async def pic_hx_form(
     elif any(name in qp for name in ['user-register-body', 'user_register_body']):
         return templates.TemplateResponse("picstargram/user/partials/login_or_register_form_register_part.html",
                                           context)
-
     else:
         return '준비되지 않은 modal입니다.'
 
@@ -1248,9 +1247,9 @@ async def pic_new_post(
 
 
 @app.get("/picstargram/me/", response_class=HTMLResponse)
+@login_required
 async def pic_me(
         request: Request,
-        hx_request: Optional[str] = Header(None),
 ):
     context = {'request': request}
     return templates.TemplateResponse("picstargram/user/me.html", context)
@@ -1301,26 +1300,21 @@ async def pic_new_user(
 @app.post("/picstargram/users/login")
 async def pic_login_user(
         request: Request,
-        response: Response,
-        # hx_request: Optional[str] = Header(None),
         user_login_req: UserLoginReq = Depends(UserLoginReq.as_form),
-
+        next_url: Union[str,bool] = Query(None, alias='next')
 ):
     #### Schema Dump + 존재/비번검증 -> pic_get_token route로 이관 ####
-    # data: dict = user_login_req.model_dump()
-    # # 로그인 검증: user존재여부 -> input pw VS 존재user의 hashed_pw verify
-    # user = get_user_by_email(data['email'])
-    # if not user:
-    #     raise BadRequestException('가입되지 않은 email입니다.')
-    # if not verify_password(data['password'], user.hashed_password):
-    #     raise BadRequestException('비밀번호가 일치하지 않습니다.')
-    ####
-
     token: dict = await pic_get_token(request, user_login_req)
 
     context = {
         'request': request,
     }
+    print(f"next_url  >> {next_url, type(next_url)}")
+
+    if next_url:
+        return redirect(request, next_url, cookies=token)
+
+    print(f" next_url 없다")
 
     return render(request, "", context,
                   cookies=token,
@@ -1328,7 +1322,8 @@ async def pic_login_user(
                   )
 
 
-@app.post("/picstargram/get-token", response_model=Token)
+# @app.post("/picstargram/get-token", response_model=Token)
+@app.post("/picstargram/auth/get-token", response_model=Token)
 async def pic_get_token(
         request: Request,
         user_login_req: UserLoginReq,

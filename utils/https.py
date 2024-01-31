@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import List
 
 from starlette import status
-from starlette.responses import HTMLResponse, Response
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, Response, RedirectResponse
 from starlette.templating import Jinja2Templates
 
 from templatefilters import feed_time
@@ -53,6 +55,7 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
         response = HTMLResponse(total_html_str, status_code=status_code)
 
     hx_trigger: dict = convert_hx_trigger_to_dict(hx_trigger)
+    
     if not html_str:
         hx_trigger['noContent'] = True
         # ...
@@ -100,3 +103,38 @@ def render_oob(template_name, *args, **kwargs: dict):
     t = templates.get_template(template_name)
     oob_html_str = t.render(*args, **kwargs)
     return oob_html_str
+
+
+async def url_pattern_check(path, pattern):
+    result = re.match(pattern, path)
+    return True if result else False
+
+
+def is_htmx(request: Request):
+    return request.headers.get("hx-request") == 'true'
+
+
+def redirect(request: Request, path, cookies: dict = None, logout=False):
+    is_request_htmx = is_htmx(request)
+
+    # 1) htmx 요청 -> Response + 302필수 + HX-Redirect에 path
+    if is_request_htmx:
+        response: Response = Response("", status_code=302)
+        # response.status_code = status.HTTP_302_FOUND
+        response.headers['HX-Redirect'] = str(path) if not isinstance(path, str) else path
+
+    # 2) 일반 요청 -> RedirectResponse (302 필수)
+    else:
+        response = RedirectResponse(path, status_code=status.HTTP_303_SEE_OTHER, headers = {"HX-Trigger": "loginModal"})
+
+    if cookies:
+        for k, v in cookies.items():
+            response.set_cookie(key=k, value=v, httponly=True)
+
+    if logout:
+        # response.set_cookie(key='session_ended', value=str(1), httponly=True)
+        response.delete_cookie('Authorization')
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+
+    return response

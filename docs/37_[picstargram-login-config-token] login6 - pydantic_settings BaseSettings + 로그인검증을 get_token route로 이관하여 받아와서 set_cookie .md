@@ -86,18 +86,25 @@
 2. 그외 payload에는 exp(ire), iat(issued at), nbf(not before), iss(issuer), jti(jwt id), aud(audience) 등을 넣을 수 있는데
     - sub는 subject로서, user의 unqiue한 값 (str(user.id) or user.email ) 등이 들어가는 것 같다.
     - 혹은 payload dict를 원하는 정보만 id, email, staff 등으로 만든 뒤 -> 메서드내에서 exp + iat + iss만 추가할 수 있다.
+    - **완성된 값은 `"Bearer "`를 붙혀준다.**
     ```python
     class Users(Base):
         # ...
         def get_token(self):
+            "TODO: sqlalchemy User 모델 이관"
             return {
-                "access_token": create_token(
-                    data=dict(id=self.id, email=self.email, staff=self.is_admin),
-                    delta=get_env().ACCESS_TOKEN_EXPIRE_MINUTES,
+                "access_token": "Bearer " + create_token(
+                    data=dict(
+                        sub=str(self.id),
+                        username=self.username,
+                        image_url=self.image_url,
+                        #staff=self.is_admin),
+                    ),
+                    delta=settings.access_token_expire_minutes,
                 ),
-                "refresh_token": create_token(
-                    data=dict(id=self.id),
-                    delta=get_env().REFRESH_TOKEN_EXPIRE_MINUTES,
+                "refresh_token": "Bearer " + create_token(
+                    data=dict(sub=str(self.id)),
+                    delta=settings.refresh_token_expire_minutes,
                 ),
             }
     

@@ -111,7 +111,7 @@
 {#                    </li>#}
                     <li>
                         {#<a hx-get="{{ url_for('pic_hx_form', form_name='user_register') }}" hx-target="#dialog">#}
-                        <a hx-get="{{ url_for('pic_hx_form') }}?user-login-or-register" hx-target="#dialog">
+                        <a hx-get="{{ url_for('pic_hx_form') }}?user-login-or-register&next={{ request.query_params.get('next', '') }}" hx-target="#dialog">
                             로그인/회원가입
                         </a>
                     </li>

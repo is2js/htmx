@@ -57,7 +57,8 @@
         </li>
         <li>
             {#<a href="me.html">#}
-            <a href="{{ url_for('pic_me') }}">
+{#            <a href="{{ url_for('pic_me') }}">#}
+            <a hx-get="{{ url_for('pic_me') }}" hx-target="">
                 <img src="{{ url_for('static', path='images/user1.png') }}" class="profile" alt="내 공간">
             </a>
         </li>
