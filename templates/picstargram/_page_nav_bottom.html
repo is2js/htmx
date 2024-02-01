@@ -1,4 +1,4 @@
-<header class="nav-bottom">
+<header class="nav-bottom d-lg-none">
     <ul class="menu">
         <li>
             <a href="{{ url_for('pic_index') }}">
@@ -58,7 +58,7 @@
         <li>
             {#<a href="me.html">#}
 {#            <a href="{{ url_for('pic_me') }}">#}
-            <a hx-get="{{ url_for('pic_me') }}" hx-target="">
+            <a href="{{ url_for('pic_me') }}">
                 <img src="{{ url_for('static', path='images/user1.png') }}" class="profile" alt="내 공간">
             </a>
         </li>

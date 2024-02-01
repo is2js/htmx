@@ -16,6 +16,7 @@ class UserSchema(BaseModel):
     email: str  # 추가
     hashed_password: str  # 추가
     username: str
+    description: Optional[str] = None
     image_url: Optional[str] = None
 
     created_at: Optional[datetime.datetime] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
@@ -32,6 +33,7 @@ class UserSchema(BaseModel):
                     sub=str(self.id),
                     email=self.email,
                     username=self.username,
+                    description=self.description,
                     image_url=self.image_url,
                     # staff=self.is_admin),
                     # 그외 exp, iat iss는 create_token 내부에서
@@ -60,6 +62,7 @@ class UserSchema(BaseModel):
                     data=dict(
                         sub=str(self.id),
                         email=self.email,
+                        description=self.description,
                         username=self.username,
                         image_url=self.image_url,
                         # staff=self.is_admin),
@@ -75,6 +78,7 @@ class UserSchema(BaseModel):
 class UserCreateReq(BaseModel):
     email: str
     username: str
+    description: Optional[str] = None
     password: str
 
     @classmethod
@@ -82,6 +86,7 @@ class UserCreateReq(BaseModel):
             cls,
             email: EmailStr = Form(...),
             username: str = Form(...),
+            description: str = Form(None),
             password1: str = Form(...),
             password2: str = Form(...),
     ):
@@ -105,7 +110,7 @@ class UserCreateReq(BaseModel):
         # if error_msg:
         #     raise Exception("<br>".join(error_msg))
 
-        return cls(email=email, username=username, password=password1)
+        return cls(email=email, username=username, description=description, password=password1)
 
 
 class UserLoginReq(BaseModel):
@@ -138,6 +143,7 @@ class UserToken(BaseModel):
     # id: int
     id: int = Field(alias='sub')
     email: EmailStr
+    description: Optional[str] = None
     # hashed_password: str
     username: str
     image_url: Optional[str] = None

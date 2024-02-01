@@ -6,7 +6,8 @@
         <h1 class="modal-title fs-5 fw-bold mx-auto" id="modalLabel">
             회원가입
         </h1>
-        <button type="button" class="btn-close position-absolute end-0 me-2" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close position-absolute end-0 me-2" data-bs-dismiss="modal"
+                aria-label="Close"></button>
     </div>
     <!-- body -->
     <div class="modal-body">
@@ -42,6 +43,21 @@
             _class='mb-3',
             input_class='',
             required=True,
+            two_col_size='sm',
+            left_col_size='4'
+        ) }}
+            <!-- description -->
+            {{ _form.inline_input(
+            type="text",
+            bg_color='#e8f0fe',
+            width='100%;max-width:500px;',
+            label='한 줄 소개',
+            label_class='',
+            name='description',
+            value='',
+            _class='mb-3',
+            input_class='',
+            required=False,
             two_col_size='sm',
             left_col_size='4'
         ) }}

@@ -69,6 +69,8 @@ async def set_cookies_token_to_(request: Request):
     try:
         access_token_info: dict = decode_token(access_token)
         request.state.user = UserToken(**access_token_info)
+        print(f"request.state.user  >> {request.state.user}")
+
         return None
 
     except ExpiredSignatureError:

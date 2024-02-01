@@ -1,7 +1,5 @@
 {% extends 'picstargram/_page_base.html' %}
 
-{#{{ request.headers.get('Referer') }}#}
-
 
 {% block meta %} {{ super() }} {% endblock meta %}
 {% block css %} {{ super() }} {% endblock css %}
@@ -9,10 +7,11 @@
 
 {% block nav_top %}
     <header class="nav-top">
-        <a href="index.html" class="back">
+{#        <a href="index.html" class="back">#}
+        <a href="{{ request.headers.get('Referer') }}" class="back">
             <i class="bi bi-chevron-left"></i>
         </a>
-        <div class="name">NAME</div>
+        <div class="name">내 프로필</div>
     </header>
 {% endblock nav_top %}
 
@@ -20,10 +19,13 @@
     <div class=" detail">
         <div class="container user">
             <div class="user-header">
-                <img src="{{ url_for('static', path='images/user1.png') }}" class="profile" alt="내 공간">
+                <img src="{% if user.image_url %}{{ url_for('static', path=user.image_url) }}{% endif %}"
+                     class="profile"
+                     alt="내 공간"
+                >
                 <div class="user-detail">
                     <div class="user-name">
-                        <h2>사용자이름</h2>
+                        <h2>{{ user.username }}</h2>
                         <button type="button" class="btn btn-sm btn-more" data-bs-toggle="modal"
                                 data-bs-target="#meModal"><i class="bi bi-three-dots" title="더보기"></i></button>
                     </div>
@@ -32,7 +34,8 @@
                     </div>
                 </div>
             </div>
-            <div class="user-description">사용자 설명</div>
+            <div class="user-description">{{ user.description }}</div>
+            <!-- follow -->
             <div class="user-followers"><span class="name">ㅇㅇ</span>님 외 10명이 팔로우합니다</div>
         </div>
         <ul class="statistics">

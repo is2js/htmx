@@ -1,0 +1,86 @@
+<header class="nav-top">
+    <div class="wrapper row">
+        <div class="d-none d-lg-block col-lg-1"></div>
+        <div class="col-5">
+            <a href="{{ url_for('pic_index') }}" class="logo me-auto">
+                Picstargram
+            </a>
+        </div>
+
+        {#<div class="col-2">#}
+        <div class="col-5 col-lg-3">
+            <div class="form-group search">
+                <input type="search" class="form-control" id="seach" placeholder="검색">
+            </div>
+        </div>
+        <div class="col">
+            <ul class="navbar-nav d-flex flex-row justify-content-end align-items-center"
+                style="height: 40px;"
+            >
+                <!-- Icons -->
+                {% if not user %}
+                    <!-- login or register -->
+                    <li class="nav-item fs-5">
+                        <a class="nav-link"
+                           hx-get="{{ url_for('pic_hx_form') }}?user-login-or-register&next={{ request.query_params.get('next', '') }}"
+                           hx-target="#dialog"
+                        >
+                            <i class="bi bi-door-open text-dark"></i>
+                        </a>
+                    </li>
+
+                {% else %}
+                    <li class="nav-item fs-5 d-none d-lg-block">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-compass text-dark"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item ms-3 fs-5 d-none d-lg-block">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-send text-dark"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item ms-3 fs-5 d-none d-lg-block">
+                        <a class="nav-link" hx-get="{{ url_for('pic_hx_form') }}?post-create" hx-target="#dialog">
+                            <i class="bi bi-plus-square text-dark"></i>
+                        </a>
+                    </li>
+                    <!-- Avatar -->
+                    <li class="nav-item ms-lg-3 dropdown">
+                        <a
+                                class="nav-link dropdown-toggle d-flex align-items-center"
+                                data-toggle="dropdown"
+                                href="#"
+                                id="navbarDropdownMenuLink"
+                                role="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                        >
+                            <img
+                                    src="https://mdbootstrap.com/img/new/avatars/1.jpg"
+                                    class="rounded-circle"
+                                    height="22"
+                                    alt=""
+                                    loading="lazy"
+                            />
+                        </a>
+                        <ul class="dropdown-menu"
+                            aria-labelledby="navbarDropdownMenuLink"
+                        >
+                            <li>
+                                <a class="fs-6 dropdown-item" href="{{ url_for('pic_me') }}">My profile</a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="fs-6 dropdown-item"
+                                   hx-post="{{ url_for('pic_logout_user') }}">Logout</a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</header>

@@ -710,4 +710,4 @@ class Users(Base):
                       messages=[Message.CREATE.write(entity=f"유저", text="로그인에 성공했습니다.")]
                       )
     ```
-    ![img.png](../images/124.png)
+    ![img.png](../images/113.png)

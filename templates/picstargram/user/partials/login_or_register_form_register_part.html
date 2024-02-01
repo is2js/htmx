@@ -37,6 +37,22 @@
             two_col_size='sm',
             left_col_size='4'
         ) }}
+
+   <!-- description -->
+    {{ _form.inline_input(
+            type="text",
+            bg_color='#e8f0fe',
+            width='100%;max-width:500px;',
+            label='한 줄 소개',
+            label_class='',
+            name='description',
+            value='',
+            _class='mb-3',
+            input_class='',
+            required=False,
+            two_col_size='sm',
+            left_col_size='4'
+        ) }}
     <!-- password -->
     {{ _form.inline_input(
             type="password",

@@ -27,11 +27,11 @@ from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserToken
+    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
-from utils.auth import verify_password, decode_token
+from utils.auth import verify_password
 from utils.https import render, redirect
 
 models.Base.metadata.create_all(bind=engine)
@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
     # 4) [Picstargram] dict -> pydantic schema model
     # global users, comments, posts
     users_, comments_, posts_, likes_, tags_, post_tags_ = await init_picstargram_json_to_list_per_pydantic_model()
-    users.extend(users_)
+    users.extend(users_)    
     comments.extend(comments_)
     posts.extend(posts_)
     likes.extend(likes_)
@@ -734,6 +734,7 @@ async def pic_create_user(
 ):
     try:
         user = create_user(user_schema)
+
         return user
 
     except Exception as e:
@@ -1253,7 +1254,8 @@ async def pic_me(
         request: Request,
 ):
     context = {'request': request}
-    return templates.TemplateResponse("picstargram/user/me.html", context)
+    # return templates.TemplateResponse("picstargram/user/me.html", context)
+    return render(request, "picstargram/user/me.html", context=context)
 
 
 @app.get("/picstargram/users/", response_class=HTMLResponse)
@@ -1276,6 +1278,7 @@ async def pic_new_user(
 ):
     data = user_create_req.model_dump()
     # data  >> {'email': 'admin@gmail.com', 'username': 'user1', 'password': '321'}
+    # data  >> {'email': 'user3@gmail.com', 'username': 'user3', 'description': 'dbwj3', 'password': 'dbwj3'}
 
     # 검증1: 중복여부(email, username)
     exists_email = get_user_by_email(data['email'])
@@ -1290,6 +1293,7 @@ async def pic_new_user(
 
     # 실 생성
     user = create_user(data)
+
     context = {
         'request': request,
     }
@@ -1342,6 +1346,7 @@ async def pic_get_token(
 
     # 로그인 검증: user존재여부 -> input pw VS 존재user의 hashed_pw verify
     user: UserSchema = get_user_by_email(data['email'])
+
     if not user:
         raise BadRequestException('가입되지 않은 email입니다.')
     if not verify_password(data['password'], user.hashed_password):
