@@ -27,11 +27,11 @@ from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token
+    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserToken
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
-from utils.auth import verify_password
+from utils.auth import verify_password, decode_token
 from utils.https import render, redirect
 
 models.Base.metadata.create_all(bind=engine)
@@ -1128,7 +1128,8 @@ async def pic_index(
         'request': request,
         'posts': posts,
     }
-    return templates.TemplateResponse("picstargram/home/index.html", context)
+    # return templates.TemplateResponse("picstargram/home/index.html", context)
+    return render(request, "picstargram/home/index.html", context)
 
 
 @app.get("/picstargram/posts/show", response_class=HTMLResponse)
@@ -1271,6 +1272,7 @@ async def pic_new_user(
         response: Response,
         hx_request: Optional[str] = Header(None),
         user_create_req: UserCreateReq = Depends(UserCreateReq.as_form),
+        next_url: Union[str, bool] = Query(None, alias='next')
 ):
     data = user_create_req.model_dump()
     # data  >> {'email': 'admin@gmail.com', 'username': 'user1', 'password': '321'}
@@ -1292,34 +1294,42 @@ async def pic_new_user(
         'request': request,
     }
 
-    return render(request, "", context,
-                  messages=[Message.CREATE.write(f'계정({user.email})')]
-                  )
+    # return render(request, "", context,
+    #               cookies=token,
+    #               messages=[Message.CREATE.write(f'계정({user.email})')]
+    #               )
+    token: dict = await pic_get_token(request, UserLoginReq(**dict(email=user_create_req.email, password=user_create_req.password)))
+
+    if next_url:
+        return redirect(request, next_url, cookies=token)
+
+    return redirect(request, request.url_for('pic_index'), cookies=token)
+
 
 
 @app.post("/picstargram/users/login")
 async def pic_login_user(
         request: Request,
         user_login_req: UserLoginReq = Depends(UserLoginReq.as_form),
-        next_url: Union[str,bool] = Query(None, alias='next')
+        next_url: Union[str, bool] = Query(None, alias='next')
 ):
     #### Schema Dump + 존재/비번검증 -> pic_get_token route로 이관 ####
     token: dict = await pic_get_token(request, user_login_req)
 
+    # 발급한 token -> UserToken -> request에 넣어서 로그인 상태로 만들어놓기
     context = {
         'request': request,
     }
-    print(f"next_url  >> {next_url, type(next_url)}")
 
     if next_url:
         return redirect(request, next_url, cookies=token)
 
-    print(f" next_url 없다")
+    return redirect(request, request.url_for('pic_index'), cookies=token)
 
-    return render(request, "", context,
-                  cookies=token,
-                  messages=[Message.CREATE.write(entity=f"유저", text="로그인에 성공했습니다.")]
-                  )
+    # return render(request, "", context,
+    #               cookies=token,
+    #               messages=[Message.CREATE.write(entity=f"유저", text="로그인에 성공했습니다.")]
+    #               )
 
 
 # @app.post("/picstargram/get-token", response_model=Token)
@@ -1338,3 +1348,11 @@ async def pic_get_token(
         raise BadRequestException('비밀번호가 일치하지 않습니다.')
 
     return user.get_token()
+
+
+@app.post("/picstargram/users/logout")
+async def pic_logout_user(
+        request: Request,
+):
+
+    return redirect(request, request.url_for('pic_index'), logout=True)

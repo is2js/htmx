@@ -22,10 +22,11 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
            messages: dict | List[dict] = None,
            oobs: List[tuple] = None,
            ):
+
     # 추가context가 안들어오는 경우는 외부에서 안넣어줘도 된다.
     ctx = {
         'request': request,
-        # 'user': request.state.user,
+        'user': request.state.user,
         **context
     }
 

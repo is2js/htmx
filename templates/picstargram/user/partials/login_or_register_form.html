@@ -17,13 +17,13 @@
             }
         </style>
             <span class="selected"
-                  hx-get="{{ url_for('pic_hx_form') }}?user-login-body"
+                  hx-get="{{ url_for('pic_hx_form') }}?user-login-body&next={{ request.query_params.get('next') }}"
                   hx-target=".modal-body"
             >
                 로그인
             </span>
             <span class="border-start border-2"
-                  hx-get="{{ url_for('pic_hx_form') }}?user-register-body"
+                  hx-get="{{ url_for('pic_hx_form') }}?user-register-body&next={{ request.query_params.get('next') }}"
                   hx-target=".modal-body"
             >
                 회원가입

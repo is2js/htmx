@@ -124,8 +124,10 @@ class UserLoginReq(BaseModel):
 
 
 class Token(BaseModel):
-    access_token: str
-    refresh_token: str = None
+
+    # refresh 할 때, next token이 비워있을 수 있어서 nullable
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
 
 
 class RefreshToken(BaseModel):

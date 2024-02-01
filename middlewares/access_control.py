@@ -7,9 +7,9 @@ from starlette.responses import Response, JSONResponse
 from crud.picstargrams import get_user
 from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import TemplateException, NotAuthorized
-from schemas.picstargrams import UserToken, UserSchema
+from schemas.picstargrams import UserToken, UserSchema, Token
 from utils.auth import decode_token
-from utils.https import render, url_pattern_check
+from utils.https import render, url_pattern_check, redirect
 
 app_name: str = "picstargram"
 LOGIN_EXCEPT_PATH_REGEX = f"^(/docs|/redoc|/static|/favicon.ico|/uploads|/auth|/api/v[0-9]+/auth|/{app_name}/auth)"
@@ -24,22 +24,20 @@ class AccessControl(BaseHTTPMiddleware):
 
         request.state.user = None
 
-    #     login_required = not await url_pattern_check(url, LOGIN_EXCEPT_PATH_REGEX) \
-    #                      or (url != "/") or (url != f"/{app_name}")
-    #
         try:
-    #         if login_required:
-    #             # set 로그인(UserToken)을 위한 request cookies token들 검사
-    #             next_access_token, next_refresh_token = await self.set_user_token_to(request)
-    #
+            # check 'access_token', 'refresh_token'in cookies for login
+            # if accessable or refreshable -> request.state.user <- UserToken
+            # if access_token exp & refreshable -> new Token
+            # if not accessable and not refreshable -> return None + request.state.user None
+            new_token: Token = await set_cookies_token_to_(request)
+
             response = await call_next(request)
-    #
-    #         # token 만료시, 재발급되는 token들을 response cookies에 set
-    #         if login_required:
-    #             await self.set_new_token_to(response, next_access_token, next_refresh_token)
-    #
+
+            if new_token:
+                await set_new_token_to(response, new_token)
+
             return response
-    #
+
         except Exception as e:
             # 템플릿 오류 -> oob render(status code 200<= <400 + 204제외만 oob swap)
             if isinstance(e, TemplateException):
@@ -50,57 +48,50 @@ class AccessControl(BaseHTTPMiddleware):
             else:
                 # return JSONResponse({"message": str(e)}, status_code=500)
                 raise e
-    #
-    #     # error_dict = dict(
-    #     #     status=error.status_code,
-    #     #     code=error.code,
-    #     #     message=error.message,
-    #     #     detail=error.detail,
-    #     # )
-    #
-    #     # if isinstance(error, (APIException, SQLAlchemyException, DBException)):
-    #     # if isinstance(error, (APIException, SQLAlchemyException, DBException, DiscordException)):
-    #     #     response = JSONResponse(status_code=error.status_code, content=error_dict)
-    #
-    # async def set_new_token_to(self, response, next_access_token, next_refresh_token):
-    #     if next_access_token:
-    #         response.set_cookie('access_token', next_access_token, httponly=True)
-    #     if next_refresh_token:
-    #         response.set_cookie('refresh_token', next_refresh_token, httponly=True)
-    #
-    # async def set_user_token_to(self, request):
-    #     cookies = request.cookies
-    #
-    #     next_access_token = None
-    #     next_refresh_token = None
-    #
-    #     if "access_token" in cookies.keys():
-    #         access_token = cookies.get("access_token")
-    #         refresh_token = cookies.get("refresh_token")
-    #         try:
-    #             access_token_info: dict = decode_token(access_token)
-    #             request.state.user = UserToken(**access_token_info)
-    #             print('로그인 된 상태 UserToken >> ', UserToken)
-    #         except ExpiredSignatureError:
-    #             try:
-    #                 refresh_token_info: dict = decode_token(refresh_token)
-    #
-    #                 user_id = int(refresh_token_info['sub'])
-    #                 user: UserSchema = get_user(user_id)
-    #
-    #                 next_token: dict = user.refresh_token(refresh_token, refresh_token_info['iat'])
-    #
-    #                 next_access_token = next_token['access_token']
-    #                 next_refresh_token = next_token['refresh_token'] if next_token['refresh_token'] != refresh_token \
-    #                     else None
-    #
-    #                 request.state.user = UserToken(**decode_token(next_access_token))
-    #                 print(f"재발급과 동시에 login 완료 >> {request.state.user}")
-    #
-    #             except ExpiredSignatureError:
-    #                 # TODO: login 검사안하는 곳(home에 로그인검사안하도록 적용 후)으로 redirect
-    #                 raise NotAuthorized('토큰이 만료되었습니다. 다시 시작해주세요.')
-    #             except Exception as e:
-    #                 raise e
-    #
-    #     return next_access_token, next_refresh_token
+
+
+async def set_cookies_token_to_(request: Request):
+    """
+    1. `access_token 없으면` Token 모델대신 None ealry return
+    2. **(access_token 존재) `try` access_token이 유효해서 decode되면 `refresh안하므로 None반환` + `로그인용 user_token 삽입`**
+    3. **decode자체 에러 -> 로그인안됨 -> `access_token없는 것과 마찬가지 return None`**
+    4. **(access_token 만료) `만료 except`에서 try refresh_token 유효해서 decode되면 `refresh해서 생긴 Token모델반환` + `로그인용 user_token 삽입`**
+    5. **(refresh_token 만료 or 에러) `refersh만료는 access_token없는 것과 마찬가지 return None`**
+    """
+    cookies = request.cookies
+
+    access_token = cookies.get("access_token", None)
+    refresh_token = cookies.get("refresh_token", None)
+
+    if not access_token:
+        return None
+
+    try:
+        access_token_info: dict = decode_token(access_token)
+        request.state.user = UserToken(**access_token_info)
+        return None
+
+    except ExpiredSignatureError:
+        try:
+            refresh_token_info: dict = decode_token(refresh_token)
+
+            user_id = int(refresh_token_info['sub'])
+            user: UserSchema = get_user(user_id)
+            next_token: dict = user.refresh_token(refresh_token, refresh_token_info['iat'])
+
+            request.state.user = UserToken(**decode_token(next_token['access_token']))
+
+            return Token(**next_token)
+        except Exception:
+            return None
+
+    except Exception:
+        return None
+
+
+# async def set_new_token_to(response, next_access_token, next_refresh_token):
+async def set_new_token_to(response, new_token: Token):
+    if new_token.access_token:
+        response.set_cookie('access_token', new_token.access_token, httponly=True)
+    if new_token.refresh_token:
+        response.set_cookie('refresh_token', new_token.refresh_token, httponly=True)
