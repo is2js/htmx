@@ -1,0 +1,21 @@
+<div class="modal-content">
+    <!-- header -->
+    <div class="modal-header border-bottom-0">
+        <h1 class="modal-title fs-5 fw-bold mx-auto" id="modalLabel">
+            더보기
+        </h1>
+        <button type="button" class="btn-close position-absolute end-0 me-2" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <!-- body -->
+    <div class="modal-body">
+       <ul class="list-group menu">
+            <li class="list-group-item">QR 코드</li>
+            <li class="list-group-item">설정</li>
+            <li class="list-group-item"
+                hx-post="{{ url_for('pic_logout_user') }}"
+            >
+                로그아웃
+            </li>
+        </ul>
+    </div>
+</div>

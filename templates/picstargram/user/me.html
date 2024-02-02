@@ -26,11 +26,22 @@
                 <div class="user-detail">
                     <div class="user-name">
                         <h2>{{ user.username }}</h2>
-                        <button type="button" class="btn btn-sm btn-more" data-bs-toggle="modal"
-                                data-bs-target="#meModal"><i class="bi bi-three-dots" title="더보기"></i></button>
+                        {#<button type="button" class="btn btn-sm btn-more"
+                                data-bs-toggle="modal" data-bs-target="#meModal">
+                            <i class="bi bi-three-dots" title="더보기"></i>
+                        </button>#}
+                        <button type="button" class="btn btn-sm btn-more"
+                                hx-get="{{ url_for('pic_hx_form') }}?me-more" hx-target="#dialog"
+                        >
+                            <i class="bi bi-three-dots" title="더보기"></i>
+                        </button>
                     </div>
                     <div class="user-actions">
-                        <button type="button" class="btn btn-sm btn-action">프로필 편집</button>
+                        <button type="button" class="btn btn-sm btn-action"
+                                hx-get="{{ url_for('pic_hx_form') }}?me-edit" hx-target="#dialog"
+                        >
+                            프로필 편집
+                        </button>
                     </div>
                 </div>
             </div>

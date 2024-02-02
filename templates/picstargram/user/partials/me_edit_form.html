@@ -1,0 +1,68 @@
+{% import 'macros/_form.html' as _form %}
+<div class="modal-content">
+
+    <!-- header -->
+    <div class="modal-header border-bottom-0">
+        <h1 class="modal-title fs-5 fw-bold mx-auto" id="modalLabel">
+            프로필 편집
+        </h1>
+        <button type="button" class="btn-close position-absolute end-0 me-2" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+    </div>
+    <!-- body -->
+    <div class="modal-body">
+        <form hx-trigger="submit"
+              hx-post="{{ url_for('pic_hx_edit_user') }}"
+              hx-encoding="multipart/form-data"
+        >
+            <!-- username -->
+            {{ _form.inline_input(
+            type="text",
+            bg_color='#e8f0fe',
+            width='100%;max-width:500px;',
+            label='닉네임',
+            label_class='',
+            name='username',
+            value='',
+            _class='mb-3',
+            input_class='',
+            required=True,
+            two_col_size='sm',
+            left_col_size='4'
+        ) }}
+            <!-- description -->
+            {{ _form.inline_input(
+            type="text",
+            bg_color='#e8f0fe',
+            width='100%;max-width:500px;',
+            label='한 줄 소개',
+            label_class='',
+            name='description',
+            value='',
+            _class='mb-3',
+            input_class='',
+            required=False,
+            two_col_size='sm',
+            left_col_size='4'
+        ) }}
+
+
+            <!-- submit -->
+            {{ _form.submit_btn(width = '100%;max-width: 500px;',
+            justify_content = 'center;',
+            btn_width = 'auto;max-width: 200px;',
+            btn_height = '50px;',
+            btn_class =  'fs-6 mt-3',
+            btn_size =  'sm',
+            btn_bg_color = 'linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%);',
+            btn_text =  '변경하기',
+            btn_font_color =  '#fff;',
+            has_cancel_btn = True,
+            btn_gap = '3',
+            cancel_btn_text =  '취소',
+            cancel_btn_bg_color = '#fff',
+            cancel_btn_font_color = 'black'
+            ) }}
+        </form>
+    </div>
+</div>

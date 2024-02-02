@@ -1169,12 +1169,13 @@ async def pic_hx_form(
         'request': request,
     }
 
-
     qp = request.query_params
     # qp  >> post-create=
 
+    # Post
     if any(name in qp for name in ['post-create', 'post_create']):
         return templates.TemplateResponse("picstargram/post/partials/create_form.html", context)
+    # Login or Register
     elif any(name in qp for name in ['user-register', 'user_register']):
         return templates.TemplateResponse("picstargram/user/partials/register_form.html", context)
     elif any(name in qp for name in ['user-login', 'user_login']):
@@ -1187,6 +1188,13 @@ async def pic_hx_form(
     elif any(name in qp for name in ['user-register-body', 'user_register_body']):
         return templates.TemplateResponse("picstargram/user/partials/login_or_register_form_register_part.html",
                                           context)
+
+    # User me
+    elif any(name in qp for name in ['me-more', 'me_more']):
+        return templates.TemplateResponse("picstargram/user/partials/me_more.html", context)
+    elif any(name in qp for name in ['me-edit', 'me_edit']):
+        return templates.TemplateResponse("picstargram/user/partials/me_edit_form.html", context)
+
     else:
         return '준비되지 않은 modal입니다.'
 
@@ -1256,6 +1264,20 @@ async def pic_me(
     context = {'request': request}
     # return templates.TemplateResponse("picstargram/user/me.html", context)
     return render(request, "picstargram/user/me.html", context=context)
+
+
+@app.get("/picstargram/users/edit", response_class=HTMLResponse)
+async def pic_hx_edit_user(
+        request: Request,
+        hx_request: Optional[str] = Header(None),
+):
+
+    context = {
+        'request': request,
+    }
+    return templates.TemplateResponse("picstargram/post/partials/posts.html", context)
+
+
 
 
 @app.get("/picstargram/users/", response_class=HTMLResponse)
@@ -1361,3 +1383,5 @@ async def pic_logout_user(
 ):
 
     return redirect(request, request.url_for('pic_index'), logout=True)
+
+
