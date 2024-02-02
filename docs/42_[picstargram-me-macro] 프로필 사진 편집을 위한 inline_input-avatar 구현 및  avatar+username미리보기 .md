@@ -3,7 +3,7 @@
 - 프로필 편집 미리보기 코드 참고: https://github.dev/tcxcx/django-webapp/tree/main/a_inbox/templates/a_inbox
 
 
-### macro 요소 내에선 url_for나 user의 context를 사용못한다.
+### macro 요소 내에선 url_for나 user의 context를 사용못한다. 미리 넣어주기
 1. form을 hx 렌더링할 때, 로그인한 경우 user가 들어가도록 render로 렌더링한다.
     ```python
     elif any(name in qp for name in ['me-edit', 'me_edit']):
@@ -142,3 +142,52 @@
     });
     ```
     ![img.png](../images/117.png)
+
+7. 이참에 post 제자리 edit form도 미리보기형식으로 작성되도록 js코드를 달아준다.
+    - modal에서는 input은 form 속 name 1개라서 querySelector로 1개로 단정했지만
+    - **post_edit_form에서는 `post`가 여러개 나와있는 상황의 제자리 form이므로 `input도 id`로 찾게하고, 대신 `output의 단순id에 비해 _input_을 추가`함**
+```html
+<!-- post/partials/edit_form.html -->
+<h5 class="fs-7 fw-bold" id="content_{{ post.id }}">{{ post.content }}</h5>
+<!--...-->
+
+<textarea rows="2" class="form-control mt-3 mb-4 px-2"
+          name="content"
+          id="content_input_{{ post.id }}"
+          placeholder="수정할 내용 입력"
+>{{ post.content }}</textarea>
+
+<!--...-->
+<script>
+    // This updates the username
+    const contentInput = document.getElementById('content_input_{{ post.id }}');
+    const contentOutput = document.getElementById('content_{{ post.id }}');
+
+    contentInput.addEventListener('input', (event) => {
+        contentOutput.innerText = event.target.value;
+    });
+</script>
+```
+### value에 값을 넣는 edit_form
+1. 이미 user를 넣어준 상태이므로, user.username과 user.description을 넣어준다.
+    - **avatar file인풋에서는 이미 기존 것의 src가 들어각 없으면 default_user.png가 들어가도록 했으며, file value는 안주고 그대로 value=""를 유지한다**
+    - 이 때, user.description 등의 string이 없는 None에 대해서는 기존 value=""의 `""`을 `else ""`로 반영해준다.
+    ```html
+    <!-- avatar -->
+    avatar_url=url_for('static', path=user.image_url) if user.image_url else url_for('static', path='images/default-user.png'),
+    
+    <!-- username -->
+    value= user.username if user.username else '',
+    
+    <!-- description -->
+    value= user.description if user.description else '',
+    
+    ```
+2.  **또한, edit를 일부는 안할 수 있으니 `required=False`로 모두 만들어준다.**
+    ```html
+    required=False,
+    ```
+    
+
+
+

@@ -41,7 +41,7 @@ class UserSchema(BaseModel):
                 delta=settings.access_token_expire_minutes,
             ),
             "refresh_token": "Bearer " + create_token(
-                data=dict(sub=str(self.id)), # 그외 exp, iat iss는 create_token 내부에서
+                data=dict(sub=str(self.id)),  # 그외 exp, iat iss는 create_token 내부에서
                 delta=settings.refresh_token_expire_minutes,
             ),
         }
@@ -54,7 +54,7 @@ class UserSchema(BaseModel):
         # refresh 발급기간이 만료기간(delta)의 1/2을 넘어선다면, refresh token도 같이 발급
         if now - iat >= settings.refresh_token_expire_minutes * 60 / 2:
             print(f"refresh의 1/2을 지나서, 둘다 재발급 ")
-            return self.get_token() # refresh 절반이 지나면, 둘다 새로 발급
+            return self.get_token()  # refresh 절반이 지나면, 둘다 새로 발급
         # 아니라면, access_token만 재발급
         else:
             return {
@@ -72,7 +72,6 @@ class UserSchema(BaseModel):
                 ),
                 "refresh_token": refresh_token,
             }
-
 
 
 class UserCreateReq(BaseModel):
@@ -129,7 +128,6 @@ class UserLoginReq(BaseModel):
 
 
 class Token(BaseModel):
-
     # refresh 할 때, next token이 비워있을 수 있어서 nullable
     access_token: Optional[str] = None
     refresh_token: Optional[str] = None
@@ -147,6 +145,40 @@ class UserToken(BaseModel):
     # hashed_password: str
     username: str
     image_url: Optional[str] = None
+
+
+class UserEditReq(BaseModel):
+    username: Optional[str] = None
+    description: Optional[str] = None
+
+    image_bytes: Optional[bytes] = None
+    image_file_name: Optional[str] = None
+    image_group_name: Optional[str] = None
+
+    @classmethod
+    async def as_form(
+            cls,
+            username: str = Form(None),
+            description: str = Form(None),
+
+            # 이미지 업로드 관련
+            file: Union[UploadFile, None] = None,
+            file_name: str = Form(None, alias='filename'),
+            image_group_name: str = Form('미분류', alias='imageGroupName'),
+
+    ):
+
+        image_bytes = image_file_name = image_group_name = None
+        if file:
+            image_bytes: bytes = await file.read()
+            image_file_name: str = file_name if file_name else file.filename
+            image_group_name: str = image_group_name
+
+        return cls(username=username, description=description,
+                   image_bytes=image_bytes,
+                   image_file_name=image_file_name,
+                   image_group_name=image_group_name,
+                   )
 
 
 class CommentSchema(BaseModel):

@@ -12,7 +12,7 @@
     <!-- body -->
     <div class="modal-body">
         <form hx-trigger="submit"
-              hx-post="{{ url_for('pic_hx_edit_user') }}"
+              hx-put="{{ url_for('pic_hx_edit_user') }}"
               hx-encoding="multipart/form-data"
         >
             <!-- avatar -->
@@ -29,7 +29,7 @@
                 value='',
                 _class='mb-3',
                 input_class='',
-                required=True,
+                required=False,
                 two_col_size='sm',
                 left_col_size='4'
         ) }}
@@ -42,13 +42,14 @@
             label='닉네임',
             label_class='',
             name='username',
-            value='',
+            value= user.username if user.username else '',
             _class='mb-3',
             input_class='',
-            required=True,
+            required=False,
             two_col_size='sm',
             left_col_size='4'
         ) }}
+
             <!-- description -->
             {{ _form.inline_input(
             type="text",
@@ -57,7 +58,7 @@
             label='한 줄 소개',
             label_class='',
             name='description',
-            value='',
+            value= user.description if user.description else '',
             _class='mb-3',
             input_class='',
             required=False,

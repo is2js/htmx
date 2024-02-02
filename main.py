@@ -27,7 +27,7 @@ from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token
+    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
@@ -1268,16 +1268,23 @@ async def pic_me(
     return render(request, "picstargram/user/me.html", context=context)
 
 
-@app.get("/picstargram/users/edit", response_class=HTMLResponse)
+@app.put("/picstargram/users/edit", response_class=HTMLResponse)
 async def pic_hx_edit_user(
         request: Request,
-        hx_request: Optional[str] = Header(None),
+        user_edit_req: UserEditReq = Depends(UserEditReq.as_form)
 ):
 
     context = {
         'request': request,
     }
-    return templates.TemplateResponse("picstargram/post/partials/posts.html", context)
+
+    print(f"user_edit_req  >> {user_edit_req.image_file_name, user_edit_req.image_group_name}")
+
+
+    return render(request, "", context=context,
+                  # hx_trigger=["postsChanged"],
+                  messages=[Message.UPDATE.write("프로필", level=MessageLevel.INFO)]
+                  )
 
 
 

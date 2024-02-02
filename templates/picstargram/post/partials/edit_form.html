@@ -3,21 +3,22 @@
         <div class="contents">
             <div class="d-flex align-items-center mb-4">
                 {% if post.image_url %}
-
                     <img class="img-fluid me-2"
                          style="width:20%!important;height: 20%!important;"
                          alt="100%x250"
                          src="{{ url_for('uploads', path=post.image_url) }}"
                     >
                 {% endif %}
-                <h5 class="fs-7 fw-bold">{{ post.content }}</h5>
+                <h5 class="fs-7 fw-bold" id="content_{{ post.id }}">{{ post.content }}</h5>
             </div>
             <form hx-put="{{ url_for('pic_update_post', post_id=post.id) }}"
                   hx-ext='json-enc'
             >
                 <textarea rows="2" class="form-control mt-3 mb-4 px-2"
                           name="content"
-                          placeholder="수정할 내용 입력">{{ post.content }}</textarea>
+                          id="content_input_{{ post.id }}"
+                          placeholder="수정할 내용 입력"
+                >{{ post.content }}</textarea>
                 <div class="d-flex align-items-center gap-2 text-sm mb-5 flex-wrap justify-content-center">
                     <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3 py-1">수정</button>
                     <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1"
@@ -29,3 +30,13 @@
         </div>
     </article>
 </div>
+
+<script>
+    // This updates the content
+    const contentInput = document.getElementById('content_input_{{ post.id }}');
+    const contentOutput = document.getElementById('content_{{ post.id }}');
+
+    contentInput.addEventListener('input', (event) => {
+        contentOutput.innerText = event.target.value;
+    });
+</script>
