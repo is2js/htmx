@@ -2,7 +2,8 @@
     <article class="post">
         <div class="header">
             <a href="{{ url_for('pic_users') }}">
-                <img src="{{ url_for('uploads', path=post.user.image_url) }}" class="profile"
+                {% set avatar_url = url_for('uploads', path=post.user.image_url) if post.user.image_url else url_for('static', path='images/default-user.png') %}
+                <img src="{{ avatar_url }}" class="profile"
                      alt="{{ post.user.username }}"/>
             </a>
             <a href="{{ url_for('pic_users') }}">

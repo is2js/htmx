@@ -15,6 +15,25 @@
               hx-post="{{ url_for('pic_hx_edit_user') }}"
               hx-encoding="multipart/form-data"
         >
+            <!-- avatar -->
+            {# user.username / user.email 을 사용함 #}
+            {{ _form.inline_input(
+                type="avatar",
+                user=user,
+                avatar_url=url_for('static', path=user.image_url) if user.image_url else url_for('static', path='images/default-user.png'),
+                bg_color='#e8f0fe',
+                width='100%;max-width:500px;',
+                label='프로필 사진',
+                label_class='',
+                name='file',
+                value='',
+                _class='mb-3',
+                input_class='',
+                required=True,
+                two_col_size='sm',
+                left_col_size='4'
+        ) }}
+
             <!-- username -->
             {{ _form.inline_input(
             type="text",

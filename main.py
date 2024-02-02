@@ -1193,7 +1193,9 @@ async def pic_hx_form(
     elif any(name in qp for name in ['me-more', 'me_more']):
         return templates.TemplateResponse("picstargram/user/partials/me_more.html", context)
     elif any(name in qp for name in ['me-edit', 'me_edit']):
-        return templates.TemplateResponse("picstargram/user/partials/me_edit_form.html", context)
+        # context.update(user=request.state.user)
+        # return templates.TemplateResponse("picstargram/user/partials/me_edit_form.html", context)
+        return render(request, "picstargram/user/partials/me_edit_form.html", context)
 
     else:
         return '준비되지 않은 modal입니다.'

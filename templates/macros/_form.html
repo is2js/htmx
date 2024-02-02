@@ -107,10 +107,10 @@
         }
     </style>
 
-    <div class="{{name}}-container mx-auto text-center form-group  {{ _class }}">
-        <div class="{{name}}-wrapper d-flex justify-content-center align-items-center position-relative">
+    <div class="{{ name }}-container mx-auto text-center form-group  {{ _class }}">
+        <div class="{{ name }}-wrapper d-flex justify-content-center align-items-center position-relative">
             <div class="image position-absolute w-100 h-100 {{ preview_div_class }}">
-                <img id="{{name}}-img" class="w-100 h-100 object-fit-cover" src="{{ src }}" alt="">
+                <img id="{{ name }}-img" class="w-100 h-100 object-fit-cover" src="{{ src }}" alt="">
             </div>
             <div class="content {{ content_div_class }}">
                 <div class="icon"><i class="bi bi-cloud-upload-fill"></i></div>
@@ -321,7 +321,7 @@
             resize: vertical;
         }
     </style>
-    <div class="{{name}}-container mx-auto text-center form-group row {{ _class }}">
+    <div class="{{ name }}-container mx-auto text-center form-group row {{ _class }}">
         <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-{{ left_col_size }} col-form-label fw-bold {{ label_class }} text-end">
             {{- label -}}
         </label>
@@ -351,6 +351,9 @@
     {%- set input_class = kwargs.get('input_class', '') -%}
     {%- set two_col_size = kwargs.get('two_col_size', 'md') -%}
     {%- set left_col_size = kwargs.get('left_col_size', '2') | int -%}
+    {# for avatar #}
+    {%- set user = kwargs.get('user', None) -%}
+    {%- set avatar_url = kwargs.get('avatar_url', None) -%}
 
     <style>
         .{{ name }}-container {
@@ -368,6 +371,21 @@
             resize: vertical;
         }
     </style>
+
+    {% if type == 'avatar' and user and avatar_url %}
+        {% set type = 'file' %}
+        <div class="d-flex flex-column align-items-center justify-content-center">
+            <img id="avatar" class="rounded-circle w-25 h-25 object-fit-cover mb-2"
+                 src="{{ avatar_url }}"/>
+            <div class="text-center w-100">
+                <h3 id="username">{{ user.username }}</h3>
+                <div class="text-muted mb-2 mt-1">{{ user.email }}</div>
+            </div>
+        </div>
+    {% else %}
+
+    {% endif %}
+
     <div class="{{ name }}-container mx-auto text-center form-group row {{ _class }}">
         <label class="d-none d-{{ two_col_size }}-inline col-{{ two_col_size }}-{{ left_col_size }} col-form-label fw-bold {{ label_class }} text-end">
             {{- label -}}
@@ -381,6 +399,32 @@
                    value="{{- value -}}">
         </div>
     </div>
+
+    {% if user and avatar_url %}
+        <script>
+           // This updates the avatar
+            const fileInput = document.querySelector('input[type="file"]');
+
+            fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const image = document.querySelector('#avatar');
+
+            if (file && file.type.includes('image')) {
+                const url = URL.createObjectURL(file);
+                image.src = url;
+            }
+            });
+
+            // This updates the username
+            const usernameInput = document.querySelector('input[name="username"]');
+            const usernameOutput = document.getElementById('username');
+
+            usernameInput.addEventListener('input', (event) => {
+                usernameOutput.innerText = event.target.value;
+            });
+
+        </script>
+    {% endif %}
 
 {% endmacro %}
 

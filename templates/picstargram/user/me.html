@@ -18,8 +18,9 @@
 {% block content %}
     <div class=" detail">
         <div class="container user">
+            {% set avatar_url = url_for('uploads', path=user.image_url) if user and user.image_url else url_for('static', path='images/default-user.png') %}
             <div class="user-header">
-                <img src="{% if user.image_url %}{{ url_for('static', path=user.image_url) }}{% endif %}"
+                <img src="{{ avatar_url }}"
                      class="profile"
                      alt="내 공간"
                 >

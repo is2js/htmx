@@ -55,9 +55,10 @@
                                 role="button"
                                 data-bs-toggle="dropdown"
                                 aria-expanded="false"
-                        >
+                    >
+                            {% set avatar_url = url_for('uploads', path=user.image_url) if user and user.image_url else url_for('static', path='images/default-user.png') %}
                             <img
-                                    src="https://mdbootstrap.com/img/new/avatars/1.jpg"
+                                    src="{{ avatar_url }}"
                                     class="rounded-circle"
                                     height="22"
                                     alt=""
