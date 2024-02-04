@@ -20,7 +20,8 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
            delete_cookies: list = None,
            hx_trigger: dict | str | List[str] = None,
            messages: dict | List[dict] = None,
-           oobs: List[tuple] = None,
+           # oobs: List[tuple] = None,
+           oobs: List[str] = None,
            ):
 
     # 추가context가 안들어오는 경우는 외부에서 안넣어줘도 된다.
@@ -43,9 +44,12 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
         messages = [messages] if isinstance(messages, dict) else messages
         oob_html_str = render_oob('picstargram/_toasts.html', messages=messages)
 
+    # if oobs:
+    #     for t_name, t_context in oobs:
+    #         oob_html_str += ('\n' if oob_html_str else '') + render_oob(t_name, **t_context)
     if oobs:
-        for t_name, t_context in oobs:
-            oob_html_str += ('\n' if oob_html_str else '') + render_oob(t_name, **t_context)
+        for t_name in oobs:
+                oob_html_str += ('\n' if oob_html_str else '') + render_oob(t_name, **ctx)
 
     # oob까지 없어야 실제 204 No Content -> swap 발생 안됨.
     if not (html_str or oob_html_str):

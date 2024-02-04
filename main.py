@@ -27,7 +27,7 @@ from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq
+    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
@@ -1274,18 +1274,32 @@ async def pic_hx_edit_user(
         request: Request,
         user_edit_req: UserEditReq = Depends(UserEditReq.as_form)
 ):
-    context = {
-        'request': request,
-    }
 
-    print(f"user_edit_req  >> {user_edit_req}")
+    data = user_edit_req.model_dump()
+    upload_image_req: UploadImageReq = data.pop('upload_image_req')
+
+    user = request.state.user
+    try:
+        user = update_user(user.id, data)
+        token = user.get_token()
+    except:
+        raise BadRequestException('유저 수정에 실패함.')
+
 
     if user_edit_req.upload_image_req:
         ...
 
+    context = {
+        'request': request,
+        'user': user,
+    }
+
     return render(request, "", context=context,
                   # hx_trigger=["postsChanged"],
-                  messages=[Message.UPDATE.write("프로필", level=MessageLevel.INFO)]
+                  cookies=token,
+                  messages=[Message.UPDATE.write("프로필", level=MessageLevel.INFO)],
+                  # oobs=[('picstargram/user/partials/me_user_profile.html', dict(request=request, user=user))],
+                  oobs=[('picstargram/user/partials/me_user_profile.html')],
                   )
 
 

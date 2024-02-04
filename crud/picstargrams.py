@@ -96,20 +96,36 @@ def create_user(data: dict):
     return user
 
 
-def update_user(user_id: int, user_schema: UserSchema):
+# def update_user(user_id: int, user_schema: UserSchema):
+#     user = get_user(user_id)
+#     if not user:
+#         raise Exception(f"해당 user(id={user_id})가 존재하지 않습니다.")
+#
+#     # TODO: update Schema가 개발되면 model(**user_schema.model_dump())로 대체
+#     # -> 지금은 업데이트 허용 필드를 직접 할당함.
+#     user.username = user_schema.username
+#     if user_schema.image_url:
+#         user.image_url = user_schema.image_url
+#     user.updated_at = datetime.datetime.now()
+#
+#     return user
+
+def update_user(user_id: int, data: dict):
     user = get_user(user_id)
     if not user:
         raise Exception(f"해당 user(id={user_id})가 존재하지 않습니다.")
 
-    # TODO: update Schema가 개발되면 model(**user_schema.model_dump())로 대체
-    # -> 지금은 업데이트 허용 필드를 직접 할당함.
-    user.username = user_schema.username
-    if user_schema.image_url:
-        user.image_url = user_schema.image_url
+    for key, value in data.items():
+        # create와 달리, nullable한 값을 가지고 오는 edit에서는 None을 제외하고 수정한다.
+        if not value:
+            continue
+        # 하지만, input의 value를 image빼고는 미리 채워놨으니 상관없다?
+        setattr(user, key, value)
+
+    # 서버 부여
     user.updated_at = datetime.datetime.now()
 
     return user
-
 
 def delete_user(user_id: int):
     user = get_user(user_id)

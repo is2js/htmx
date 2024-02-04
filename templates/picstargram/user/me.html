@@ -17,39 +17,9 @@
 
 {% block content %}
     <div class=" detail">
-        <div class="container user">
-            {% set avatar_url = url_for('uploads', path=user.image_url) if user and user.image_url else url_for('static', path='images/default-user.png') %}
-            <div class="user-header">
-                <img src="{{ avatar_url }}"
-                     class="profile"
-                     alt="내 공간"
-                >
-                <div class="user-detail">
-                    <div class="user-name">
-                        <h2>{{ user.username }}</h2>
-                        {#<button type="button" class="btn btn-sm btn-more"
-                                data-bs-toggle="modal" data-bs-target="#meModal">
-                            <i class="bi bi-three-dots" title="더보기"></i>
-                        </button>#}
-                        <button type="button" class="btn btn-sm btn-more"
-                                hx-get="{{ url_for('pic_hx_form') }}?me-more" hx-target="#dialog"
-                        >
-                            <i class="bi bi-three-dots" title="더보기"></i>
-                        </button>
-                    </div>
-                    <div class="user-actions">
-                        <button type="button" class="btn btn-sm btn-action"
-                                hx-get="{{ url_for('pic_hx_form') }}?me-edit" hx-target="#dialog"
-                        >
-                            프로필 편집
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="user-description">{{ user.description }}</div>
-            <!-- follow -->
-            <div class="user-followers"><span class="name">ㅇㅇ</span>님 외 10명이 팔로우합니다</div>
-        </div>
+        {# oob swap 대상 #}
+        {% include 'picstargram/user/partials/me_user_profile.html' %}
+
         <ul class="statistics">
             <li class="statistics-item">
                 <div class="name">게시물</div>
