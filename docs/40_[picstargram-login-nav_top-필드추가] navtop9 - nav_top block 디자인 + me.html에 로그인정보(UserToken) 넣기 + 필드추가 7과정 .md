@@ -355,3 +355,45 @@
         description: Optional[str] = None
         #...
     ```
+   
+
+
+### post CRUD도 login user와 post작성자 일치시에만 
+
+1. 일단 `hx 부분요청`으로 posts들이 render되는데, 여기도 render() 메서드로 user 변수에 로그인되었다면 들어가게 처리한다.
+    ```python
+    @app.get("/picstargram/posts/show", response_class=HTMLResponse)
+    async def pic_hx_show_posts(
+            request: Request,
+            hx_request: Optional[str] = Header(None),
+    ):
+        posts = get_posts(with_user=True, with_tags=True, with_likes=True, with_comments=True)
+    
+        context = {
+            'request': request,
+            'posts': posts,
+        }
+        # return templates.TemplateResponse("picstargram/post/partials/posts.html", context)
+        return render(request, "picstargram/post/partials/posts.html", context=context)
+    ```
+   
+
+2. post/partials/post.html에서 **edit/delete의 조건이 1) user변수 존재(로그인) 2) post.user.id == user.id** 2가지  조건을 걸어서 보이게 한다.
+    ```html
+    <div class="header-icons">
+        {% if user and post.user.id == user.id %}
+        <a hx-get="{{ url_for('pic_hx_get_edit_form', post_id= post.id ) }}" style="cursor: pointer;">
+            <i class="bi bi-pencil"></i>
+        </a>
+        <a hx-delete="{{ url_for('pic_delete_post', post_id= post.id ) }}"
+           hx-confirm="정말 삭제하시겠습니까?"
+           style="cursor: pointer;"
+        >
+            <i class="bi bi-trash3-fill"></i>
+        </a>
+        {% else %}
+    
+        {% endif %}
+    </div>
+    
+    ```

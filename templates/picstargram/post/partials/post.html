@@ -13,6 +13,7 @@
                 (수정됨){%- endif %}</div>
             {# https://icons.getbootstrap.com/?q= #}
             <div class="header-icons">
+                {% if user and post.user.id == user.id %}
                 <a hx-get="{{ url_for('pic_hx_get_edit_form', post_id= post.id ) }}" style="cursor: pointer;">
                     <i class="bi bi-pencil"></i>
                 </a>
@@ -22,6 +23,9 @@
                 >
                     <i class="bi bi-trash3-fill"></i>
                 </a>
+                {% else %}
+
+                {% endif %}
             </div>
         </div>
         <div class="contents">

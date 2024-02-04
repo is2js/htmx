@@ -23,7 +23,7 @@ class AccessControl(BaseHTTPMiddleware):
         request.state.ip = ip.split(",")[0] if "," in ip else ip
 
         request.state.user = None
-
+        #  TODO: verify
         try:
             # check 'access_token', 'refresh_token'in cookies for login
             # if accessable or refreshable -> request.state.user <- UserToken
@@ -74,6 +74,12 @@ async def set_cookies_token_to_(request: Request):
     except ExpiredSignatureError:
         try:
             refresh_token_info: dict = decode_token(refresh_token)
+            # TODO: verify 한번은 해야한다.
+            # => redis 캐쉬세팅에 넣어서, verify 언제됬는지 -> string
+            # eb ssh -> redis/db 연결해서
+            #           Django Caches IGNORE REDIS 옵션을
+            # lamdba function python -> trigger -> lambda로
+            # ec2 - create image 로 docker file 불러와서 쓸 수 있음.
 
             user_id = int(refresh_token_info['sub'])
             user: UserSchema = get_user(user_id)

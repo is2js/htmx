@@ -147,13 +147,42 @@ class UserToken(BaseModel):
     image_url: Optional[str] = None
 
 
+# Upload Image
+class UploadImageReq(BaseModel):
+    image_bytes: bytes
+    image_file_name: str
+    image_group_name: str
+
+    @classmethod
+    async def as_form(
+            cls,
+            # 이미지 업로드 관련
+            file: Union[UploadFile, None] = None,
+            file_name: str = Form(None, alias='fileName'),
+            image_group_name: str = Form(None, alias='imageGroupName'),
+    ):
+        if file:
+            image_bytes: bytes = await file.read()
+            # file_name 과 image_group_name는 안들어오면 기본값 (file객체.filename / '미분류')을 준다
+            image_file_name: str = file_name if file_name else file.filename
+            image_group_name: str = image_group_name if image_group_name else '미분류'
+            return cls(
+                image_bytes=image_bytes,
+                image_file_name=image_file_name,
+                image_group_name=image_group_name,
+            )
+        # 다른 schema의 as_form에서 Depends()로 사용될 때, file이 없으면 None으로 들어가게 한다.
+        return None
+
+
 class UserEditReq(BaseModel):
     username: Optional[str] = None
     description: Optional[str] = None
 
-    image_bytes: Optional[bytes] = None
-    image_file_name: Optional[str] = None
-    image_group_name: Optional[str] = None
+    upload_image_req: Optional[UploadImageReq] = None
+    # image_bytes: Optional[bytes] = None
+    # image_file_name: Optional[str] = None
+    # image_group_name: Optional[str] = None
 
     @classmethod
     async def as_form(
@@ -161,24 +190,13 @@ class UserEditReq(BaseModel):
             username: str = Form(None),
             description: str = Form(None),
 
-            # 이미지 업로드 관련
-            file: Union[UploadFile, None] = None,
-            file_name: str = Form(None, alias='filename'),
-            image_group_name: str = Form('미분류', alias='imageGroupName'),
-
+            upload_image_req: Optional[UploadImageReq] = Depends(UploadImageReq.as_form)
     ):
+        return cls(
+            username=username, description=description,
 
-        image_bytes = image_file_name = image_group_name = None
-        if file:
-            image_bytes: bytes = await file.read()
-            image_file_name: str = file_name if file_name else file.filename
-            image_group_name: str = image_group_name
-
-        return cls(username=username, description=description,
-                   image_bytes=image_bytes,
-                   image_file_name=image_file_name,
-                   image_group_name=image_group_name,
-                   )
+            upload_image_req=upload_image_req,
+        )
 
 
 class CommentSchema(BaseModel):

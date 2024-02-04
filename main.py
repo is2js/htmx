@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
     # 4) [Picstargram] dict -> pydantic schema model
     # global users, comments, posts
     users_, comments_, posts_, likes_, tags_, post_tags_ = await init_picstargram_json_to_list_per_pydantic_model()
-    users.extend(users_)    
+    users.extend(users_)
     comments.extend(comments_)
     posts.extend(posts_)
     likes.extend(likes_)
@@ -1144,7 +1144,8 @@ async def pic_hx_show_posts(
         'request': request,
         'posts': posts,
     }
-    return templates.TemplateResponse("picstargram/post/partials/posts.html", context)
+    # return templates.TemplateResponse("picstargram/post/partials/posts.html", context)
+    return render(request, "picstargram/post/partials/posts.html", context=context)
 
 
 # @app.get("/picstargram/form/posts/create", response_class=HTMLResponse)
@@ -1273,20 +1274,19 @@ async def pic_hx_edit_user(
         request: Request,
         user_edit_req: UserEditReq = Depends(UserEditReq.as_form)
 ):
-
     context = {
         'request': request,
     }
 
-    print(f"user_edit_req  >> {user_edit_req.image_file_name, user_edit_req.image_group_name}")
+    print(f"user_edit_req  >> {user_edit_req}")
 
+    if user_edit_req.upload_image_req:
+        ...
 
     return render(request, "", context=context,
                   # hx_trigger=["postsChanged"],
                   messages=[Message.UPDATE.write("프로필", level=MessageLevel.INFO)]
                   )
-
-
 
 
 @app.get("/picstargram/users/", response_class=HTMLResponse)
@@ -1333,13 +1333,13 @@ async def pic_new_user(
     #               cookies=token,
     #               messages=[Message.CREATE.write(f'계정({user.email})')]
     #               )
-    token: dict = await pic_get_token(request, UserLoginReq(**dict(email=user_create_req.email, password=user_create_req.password)))
+    token: dict = await pic_get_token(request, UserLoginReq(
+        **dict(email=user_create_req.email, password=user_create_req.password)))
 
     if next_url:
         return redirect(request, next_url, cookies=token)
 
     return redirect(request, request.url_for('pic_index'), cookies=token)
-
 
 
 @app.post("/picstargram/users/login")
@@ -1390,7 +1390,4 @@ async def pic_get_token(
 async def pic_logout_user(
         request: Request,
 ):
-
     return redirect(request, request.url_for('pic_index'), logout=True)
-
-
