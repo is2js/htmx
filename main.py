@@ -5,6 +5,7 @@ import pathlib
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
+from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query
 from fastapi.encoders import jsonable_encoder
@@ -33,6 +34,8 @@ from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 from utils.auth import verify_password
 from utils.https import render, redirect
+from utils.images import get_image_size_and_ext, get_thumbnail_image_obj_and_file_size, \
+    resize_and_get_image_obj_and_file_size, get_s3_url
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -1274,9 +1277,12 @@ async def pic_hx_edit_user(
         request: Request,
         user_edit_req: UserEditReq = Depends(UserEditReq.as_form)
 ):
-
     data = user_edit_req.model_dump()
-    upload_image_req: UploadImageReq = data.pop('upload_image_req')
+
+    # model_dump()시  내부 포함하는 schema UploadImageReq도 dict화 된다. -> 다른 route로 보낼 수 없음.
+    # {..., {'upload_image_req': {'image_bytes': '', 'image_file_name': 'bubu.png', 'image_group_name': '미분류'}}
+    # -> user모델 데이터가 아닌 것으로서, 미리 pop으로 빼놓기
+    upload_image_req: dict = data.pop('upload_image_req')
 
     user = request.state.user
     try:
@@ -1285,9 +1291,9 @@ async def pic_hx_edit_user(
     except:
         raise BadRequestException('유저 수정에 실패함.')
 
-
-    if user_edit_req.upload_image_req:
-        ...
+    if upload_image_req:
+        # pop해놓은 dict를 다시 Schema로 감싸서 보내기
+        print(await pic_uploader(request, UploadImageReq(**upload_image_req)))
 
     context = {
         'request': request,
@@ -1301,6 +1307,100 @@ async def pic_hx_edit_user(
                   # oobs=[('picstargram/user/partials/me_user_profile.html', dict(request=request, user=user))],
                   oobs=[('picstargram/user/partials/me_user_profile.html')],
                   )
+
+
+@app.post('/uploader')
+async def pic_uploader(
+        request: Request,
+        upload_image_req: UploadImageReq
+):
+    data = upload_image_req.model_dump()
+    image_group_name = data['image_group_name']
+    image_file_name = data['image_file_name']
+    image_bytes = data['image_bytes']
+
+    # 1) image_bytes -> BytesIO+Image.open() -> image객체
+    #    -> 원본 image size + ext 추출
+    image_size, image_extension = await get_image_size_and_ext(image_bytes)
+
+    # 2) 정사각형으로 crop -> thumbnail image 객체 -> .save()를 이용해
+    #    -> webp포맷 thumbnail의 buffer + file_size 추출
+    thumbnail_image_obj, thumbnail_file_size = await get_thumbnail_image_obj_and_file_size(
+        image_bytes,
+        thumbnail_size=(200, 200)
+    )
+
+    # 3) 정해진 size들을 돌며, thumbnail외 그것보다 큰 것이 나타나면 ratio유지한 resize하여
+    #  -> image객체를 dict에 size별로 모으기 + file_size는 total 누적
+    #  -> 사이즈가 커서, 여러size를 resize하면, total_file_size에 누적
+    image_objs_per_size = dict(thumbnail=thumbnail_image_obj)
+    total_file_size = thumbnail_file_size
+
+    image_convert_sizes = [512, 1024, 1920]
+    for convert_size in image_convert_sizes:
+        # 원본 width가 정해진 size보다 클 때만, ratio resize 후 추가됨.
+        # -> 512보다 작으면 only thumbnail만 추가된다.
+        if image_size[0] > convert_size:
+            resized_image, resized_file_size = await resize_and_get_image_obj_and_file_size(
+                image_bytes,
+                convert_size
+            )
+
+            # 누적변수2개에 각각 추가
+            image_objs_per_size[convert_size] = resized_image
+            total_file_size += resized_file_size
+
+    # print(f"image_objs_per_size  >> {image_objs_per_size}")
+    # print(f"total_file_size  >> {total_file_size}")
+
+    # 4) (1)업로드완료가정 접속url size별dict + (2)업로드에 필요한 데이터 size별dict
+    #    (1) s3_urls_per_size: [DB에 size(key)별-저장될 s3_url(value) 저장할 JSON]정보 넣기
+    #    (2) to_s3_upload_data_per_size: s3업로드에 필요한 size별-[image객체] + [image_group_name] + [uuid_size.webp의 업로드될파일명] 정보 넣기
+    uuid = str(uuid4())  # for s3 file_name
+    # AWS_BUCKET_NAME = "" # for s3 url -> 환경변수 처리
+    # AWS_REGION = ""
+
+    s3_urls_per_size = {}  # for db-json 필드: size별 s3 upload완료되고 접속할 주소들
+    to_s3_upload_data_per_size = {}  # for s3 upload: size별 업로드에 필요한 데이터 1) image_obj, 2) 부모폴더명 3) 파일명
+
+    for size, image_obj in image_objs_per_size.items():
+        file_name = f"{uuid}_{size}.webp"
+        s3_url = await get_s3_url(image_group_name, file_name)
+
+        # for db json필드
+        s3_urls_per_size[size] = s3_url
+
+        # for s3 upload
+        to_s3_upload_data_per_size[size] = {
+            "image_obj": image_obj,
+            "image_group_name": image_group_name,
+            "image_file_name": file_name,
+        }
+
+    print(f"""image_url_data >>
+ {s3_urls_per_size}
+ 
+ image_to_upload_data  >> 
+ {to_s3_upload_data_per_size}
+ """)
+    # image_url_data >>
+    #  {'
+    #  thumbnail': 'https://.s3..amazonaws.com/미분류/dafbf640-e566-4e29-97c5-8d10fb09ade9_thumbnail.webp',
+    #  512: 'https://.s3..amazonaws.com/미분류/dafbf640-e566-4e29-97c5-8d10fb09ade9_512.webp',
+    #  1024: 'https://.s3..amazonaws.com/미분류/dafbf640-e566-4e29-97c5-8d10fb09ade9_1024.webp'
+    #  }
+    #
+    #  image_to_upload_data  >>
+    #  {
+    #  'thumbnail': {
+    #  'image_obj': <_io.BytesIO object at 0x000002D7633D4A90>,
+    #  'image_group_name': '미분류',
+    #  'image_file_name': '
+    #  dafbf640-e566-4e29-97c5-8d10fb09ade9_thumbnail.webp'
+    #  },
+    #  512: {'image_obj': <PIL.Image.Image image mode=RGB size=512x248 at 0x2D762C59DF0>, 'image_group_name': '미분류', 'image_file_name': 'dafbf640-e566-4e29-97c5-8d10fb09ade9_512.webp'}, 1024: {'image_obj': <PIL.Image.Image image mode=RGB size=1024x497 at 0x2D763309760>, 'image_group_name': '미분류', 'image_file_name': 'dafbf640-e566-4e29-97c5-8d10fb09ade9_1024.webp'}}
+
+    # f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{image_group_name}/{image_file_name}"
 
 
 @app.get("/picstargram/users/", response_class=HTMLResponse)

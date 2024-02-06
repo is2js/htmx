@@ -18,5 +18,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 1  # one day
     refresh_token_expire_minutes: int = 60 * 24 * 60  # sixty day
 
+    aws_bucket_name: str
+    aws_region: str
+
 
 settings = Settings()
