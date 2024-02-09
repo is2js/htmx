@@ -7,7 +7,8 @@ from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query
+import requests
+from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
@@ -28,14 +29,14 @@ from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq
+    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq, ImageInfoSchema
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
 from utils.auth import verify_password
 from utils.https import render, redirect
 from utils.images import get_image_size_and_ext, get_thumbnail_image_obj_and_file_size, \
-    resize_and_get_image_obj_and_file_size, get_s3_url
+    resize_and_get_image_obj_and_file_size, get_s3_url, background_s3_image_data_upload, s3_image_upload
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -45,7 +46,8 @@ tracks_data = []
 from crud.picstargrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
     update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
-    update_tag, delete_tag, get_user_by_username, get_user_by_email
+    update_tag, delete_tag, get_user_by_username, get_user_by_email, \
+    image_infos, create_image_info
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -1273,8 +1275,10 @@ async def pic_me(
 
 
 @app.put("/picstargram/users/edit", response_class=HTMLResponse)
+@login_required
 async def pic_hx_edit_user(
         request: Request,
+        bg_task: BackgroundTasks,
         user_edit_req: UserEditReq = Depends(UserEditReq.as_form)
 ):
     data = user_edit_req.model_dump()
@@ -1285,15 +1289,25 @@ async def pic_hx_edit_user(
     upload_image_req: dict = data.pop('upload_image_req')
 
     user = request.state.user
+
+    if upload_image_req:
+        # pop해놓은 dict를 다시 Schema로 감싸서 보내기
+        image_info: ImageInfoSchema = await pic_uploader(
+            request,
+            bg_task,
+            UploadImageReq(**upload_image_req),
+            image_group_name='user_profile'
+        )
+
+        thumbnail_url = image_info.image_url_data['thumbnail']
+        data['image_url'] = thumbnail_url
+
+    # 업데이트 user -> 업데이트 token for request.state.user
     try:
         user = update_user(user.id, data)
         token = user.get_token()
     except:
         raise BadRequestException('유저 수정에 실패함.')
-
-    if upload_image_req:
-        # pop해놓은 dict를 다시 Schema로 감싸서 보내기
-        print(await pic_uploader(request, UploadImageReq(**upload_image_req)))
 
     context = {
         'request': request,
@@ -1304,30 +1318,42 @@ async def pic_hx_edit_user(
                   # hx_trigger=["postsChanged"],
                   cookies=token,
                   messages=[Message.UPDATE.write("프로필", level=MessageLevel.INFO)],
-                  # oobs=[('picstargram/user/partials/me_user_profile.html', dict(request=request, user=user))],
                   oobs=[('picstargram/user/partials/me_user_profile.html')],
                   )
 
 
-@app.post('/uploader')
+@app.post('/uploader', response_model=ImageInfoSchema)
 async def pic_uploader(
         request: Request,
-        upload_image_req: UploadImageReq
+        bg_task: BackgroundTasks,
+        upload_image_req: UploadImageReq,
+        image_group_name: str,
 ):
+    uuid = str(uuid4())  # for s3 file_name
+    thumbnail_size = (200, 200)  # 원본대신 정사각 thumbnail
+    image_convert_sizes = [512, 1024, 1920]  # 이것보다 width가 크면 ratio유지 resize
+
     data = upload_image_req.model_dump()
-    image_group_name = data['image_group_name']
+    # image_group_name = data['image_group_name']
+    # TODO: for db -> 추후 다운로드시 이 이름을 사용
     image_file_name = data['image_file_name']
     image_bytes = data['image_bytes']
 
     # 1) image_bytes -> BytesIO+Image.open() -> image객체
     #    -> 원본 image size + ext 추출
-    image_size, image_extension = await get_image_size_and_ext(image_bytes)
+    # TODO: for db -> 추후 다운로드시 이 size 및 ext으로 다운로드 되도록
+    try:
+        image_size, image_extension = await get_image_size_and_ext(image_bytes)
+    except Exception as e:
+        # .svg도 통과안된다. 에러난다면, Image객체로 못받아들이는 것들
+        # raise BadRequestException(str(e))
+        raise BadRequestException('유효하지 않은 이미지 확장자입니다.')
 
     # 2) 정사각형으로 crop -> thumbnail image 객체 -> .save()를 이용해
     #    -> webp포맷 thumbnail의 buffer + file_size 추출
     thumbnail_image_obj, thumbnail_file_size = await get_thumbnail_image_obj_and_file_size(
         image_bytes,
-        thumbnail_size=(200, 200)
+        thumbnail_size=thumbnail_size
     )
 
     # 3) 정해진 size들을 돌며, thumbnail외 그것보다 큰 것이 나타나면 ratio유지한 resize하여
@@ -1336,7 +1362,6 @@ async def pic_uploader(
     image_objs_per_size = dict(thumbnail=thumbnail_image_obj)
     total_file_size = thumbnail_file_size
 
-    image_convert_sizes = [512, 1024, 1920]
     for convert_size in image_convert_sizes:
         # 원본 width가 정해진 size보다 클 때만, ratio resize 후 추가됨.
         # -> 512보다 작으면 only thumbnail만 추가된다.
@@ -1356,9 +1381,6 @@ async def pic_uploader(
     # 4) (1)업로드완료가정 접속url size별dict + (2)업로드에 필요한 데이터 size별dict
     #    (1) s3_urls_per_size: [DB에 size(key)별-저장될 s3_url(value) 저장할 JSON]정보 넣기
     #    (2) to_s3_upload_data_per_size: s3업로드에 필요한 size별-[image객체] + [image_group_name] + [uuid_size.webp의 업로드될파일명] 정보 넣기
-    uuid = str(uuid4())  # for s3 file_name
-    # AWS_BUCKET_NAME = "" # for s3 url -> 환경변수 처리
-    # AWS_REGION = ""
 
     s3_urls_per_size = {}  # for db-json 필드: size별 s3 upload완료되고 접속할 주소들
     to_s3_upload_data_per_size = {}  # for s3 upload: size별 업로드에 필요한 데이터 1) image_obj, 2) 부모폴더명 3) 파일명
@@ -1377,30 +1399,33 @@ async def pic_uploader(
             "image_file_name": file_name,
         }
 
-    print(f"""image_url_data >>
- {s3_urls_per_size}
- 
- image_to_upload_data  >> 
- {to_s3_upload_data_per_size}
- """)
-    # image_url_data >>
-    #  {'
-    #  thumbnail': 'https://.s3..amazonaws.com/미분류/dafbf640-e566-4e29-97c5-8d10fb09ade9_thumbnail.webp',
-    #  512: 'https://.s3..amazonaws.com/미분류/dafbf640-e566-4e29-97c5-8d10fb09ade9_512.webp',
-    #  1024: 'https://.s3..amazonaws.com/미분류/dafbf640-e566-4e29-97c5-8d10fb09ade9_1024.webp'
-    #  }
-    #
-    #  image_to_upload_data  >>
-    #  {
-    #  'thumbnail': {
-    #  'image_obj': <_io.BytesIO object at 0x000002D7633D4A90>,
-    #  'image_group_name': '미분류',
-    #  'image_file_name': '
-    #  dafbf640-e566-4e29-97c5-8d10fb09ade9_thumbnail.webp'
-    #  },
-    #  512: {'image_obj': <PIL.Image.Image image mode=RGB size=512x248 at 0x2D762C59DF0>, 'image_group_name': '미분류', 'image_file_name': 'dafbf640-e566-4e29-97c5-8d10fb09ade9_512.webp'}, 1024: {'image_obj': <PIL.Image.Image image mode=RGB size=1024x497 at 0x2D763309760>, 'image_group_name': '미분류', 'image_file_name': 'dafbf640-e566-4e29-97c5-8d10fb09ade9_1024.webp'}}
+    # s3_upload
+    # 1) thumbnail은 응답에서 바로보여지기 하기위해 [순차적] not bg_task by pop
+    #    - 템플릿에 보여줄 thumbnail만 백그라운드 안통하고 동기처리 for template
+    thumbnail_data = to_s3_upload_data_per_size.pop('thumbnail')
+    _thumbnail_url = await s3_image_upload(
+        thumbnail_data['image_file_name'],
+        thumbnail_data['image_group_name'],
+        thumbnail_data['image_obj']
+    )
+    # 2) thumbnail 제외하고는 bg_task로 [백그라운드] 처리로 넘기기
+    bg_task.add_task(background_s3_image_data_upload, to_s3_upload_data_per_size)
 
-    # f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{image_group_name}/{image_file_name}"
+    # print(f"s3_urls_per_size  >> {s3_urls_per_size}")
+    image_info_data = {
+        'user_id': request.state.user.id,
+
+        'image_group_name': image_group_name,
+        'file_name': image_file_name,
+        'file_extension': image_extension,
+        'uuid': uuid,
+        'total_file_size': total_file_size,
+        'image_url_data': s3_urls_per_size,
+    }
+
+    image_info = create_image_info(image_info_data)
+
+    return image_info
 
 
 @app.get("/picstargram/users/", response_class=HTMLResponse)

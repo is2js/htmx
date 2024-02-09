@@ -151,7 +151,7 @@ class UserToken(BaseModel):
 class UploadImageReq(BaseModel):
     image_bytes: bytes
     image_file_name: str
-    image_group_name: str
+    # image_group_name: str
 
     @classmethod
     async def as_form(
@@ -159,20 +159,37 @@ class UploadImageReq(BaseModel):
             # 이미지 업로드 관련
             file: Union[UploadFile, None] = None,
             file_name: str = Form(None, alias='fileName'),
-            image_group_name: str = Form(None, alias='imageGroupName'),
+            # image_group_name: str = Form(None, alias='imageGroupName'),
     ):
         if file:
             image_bytes: bytes = await file.read()
             # file_name 과 image_group_name는 안들어오면 기본값 (file객체.filename / '미분류')을 준다
             image_file_name: str = file_name if file_name else file.filename
-            image_group_name: str = image_group_name if image_group_name else '미분류'
+            # image_group_name: str = image_group_name if image_group_name else '미분류'
             return cls(
                 image_bytes=image_bytes,
                 image_file_name=image_file_name,
-                image_group_name=image_group_name,
+                # image_group_name=image_group_name,
             )
         # 다른 schema의 as_form에서 Depends()로 사용될 때, file이 없으면 None으로 들어가게 한다.
         return None
+
+
+class ImageInfoSchema(BaseModel):
+    # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    id: Optional[int] = None
+    created_at: Optional[datetime.datetime] = None
+    updated_at: Optional[datetime.datetime] = None
+
+    image_group_name: str
+    file_name: str
+    file_extension: str
+    uuid: str
+    total_file_size: int
+    image_url_data: dict
+
+    user_id: int # user에 대한 many
+    # user: Optional[UserSchema] = None # many to one인데 할일 없어서 생략
 
 
 class UserEditReq(BaseModel):
@@ -180,6 +197,7 @@ class UserEditReq(BaseModel):
     description: Optional[str] = None
 
     upload_image_req: Optional[UploadImageReq] = None
+
     # image_bytes: Optional[bytes] = None
     # image_file_name: Optional[str] = None
     # image_group_name: Optional[str] = None
@@ -218,9 +236,10 @@ class PostSchema(BaseModel):
     # Optional필드도 = None을 부여해야, backend에서 Schema(**data)시 필드에러 안난다.
     created_at: Optional[datetime.datetime] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
     updated_at: Optional[datetime.datetime] = None
-    user_id: int
 
+    user_id: int
     user: Optional[UserSchema] = None
+
     comments: Optional[List[CommentSchema]] = []
 
     likes: Optional[List['LikeSchema']] = []

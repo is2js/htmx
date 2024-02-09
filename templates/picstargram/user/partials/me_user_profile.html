@@ -1,6 +1,7 @@
-<div class="container user" hx-swap-oob="outerHTML" id="user-profile" >
-    {% set avatar_url = url_for('uploads', path=user.image_url) if user and user.image_url else url_for('static', path='images/default-user.png') %}
+<div class="container user" hx-swap-oob="outerHTML" id="user-profile">
+
     <div class="user-header">
+        {% set avatar_url = user.image_url if user and user.image_url else url_for('static', path='images/default-user.png') %}
         <img src="{{ avatar_url }}"
              class="profile"
              alt="내 공간"
@@ -31,3 +32,34 @@
     <!-- follow -->
     <div class="user-followers"><span class="name">ㅇㅇ</span>님 외 10명이 팔로우합니다</div>
 </div>
+
+
+<script>
+
+
+    function isImageValid(url, callback) {
+        var testImage = new Image();
+        testImage.src = url;
+        testImage.onload = function() {
+            callback(true);
+        };
+        testImage.onerror = function() {
+            callback(false);
+        };
+    }
+
+        function reloadImage() {
+        var img = document.getElementById('dynamicImage');
+        var currentSrc = "{{ user.image_url }}";
+
+        isImageValid(currentSrc, function(valid) {
+            if (valid) {
+                img.src = currentSrc;
+            } else {
+                img.src = "{{ url_for('static', path='images/default-user.png') }}";
+            }
+        });
+    }
+
+    setInterval(reloadImage, 1000);
+</script>

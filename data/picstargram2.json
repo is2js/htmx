@@ -8,17 +8,17 @@
       "hashed_password": "$2b$12$3T2KieEN5gZpNRyD8ni3c.FAQhEFzYbFKjG41NEeXpQ/Vt0nZML1u",
       "created_at": "2018-05-17 16:56:21",
       "updated_at": "2018-05-17 16:56:21",
-      "image_url": "images/user1.png"
+      "image_url": "https://picstargram.s3.ap-northeast-2.amazonaws.com/init/user1.png"
     },
     {
       "id": 2,
       "email": "user2@gmail.com",
-      "hashed_password": "$2b$12$5AFZVL.yRMmNJeSPjFV9KOJ1T95tt/MxhaswTT0of0j4fuSbcVemS/Vt0nZML1u",
+      "hashed_password": "$2b$12$3T2KieEN5gZpNRyD8ni3c.FAQhEFzYbFKjG41NEeXpQ/Vt0nZML1u",
       "username": "user2",
       "description": "This is the description of user2.",
       "created_at": "2019-05-17 16:56:21",
       "updated_at": "2019-05-17 16:56:21",
-      "image_url": "images/user2.png"
+      "image_url": "https://picstargram.s3.ap-northeast-2.amazonaws.com/init/user2.png"
     }
   ],
   "posts": [

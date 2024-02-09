@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     aws_bucket_name: str
     aws_region: str
+    aws_access_key_id: str
+    aws_secret_access_key: str
 
 
 settings = Settings()

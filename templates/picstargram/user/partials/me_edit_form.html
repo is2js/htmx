@@ -17,10 +17,11 @@
         >
             <!-- avatar -->
             {# user.username / user.email 을 사용함 #}
+                {#avatar_url=url_for('static', path=user.image_url) if user.image_url else url_for('static', path='images/default-user.png'),#}
             {{ _form.inline_input(
                 type="avatar",
                 user=user,
-                avatar_url=url_for('static', path=user.image_url) if user.image_url else url_for('static', path='images/default-user.png'),
+                avatar_url=user.image_url if user.image_url else url_for('static', path='images/default-user.png'),
                 bg_color='#e8f0fe',
                 width='100%;max-width:500px;',
                 label='프로필 사진',

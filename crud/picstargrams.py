@@ -1,17 +1,20 @@
 # CRUD 함수 정의
 import datetime
 
-from schemas.picstargrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema, PostTagSchema
+from schemas.picstargrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema, PostTagSchema, \
+    ImageInfoSchema
 from utils.auth import hash_password
 
 users, comments, posts, likes, tags, post_tags = [], [], [], [], [], []
+# 이미지
+image_infos = []
 
 
 def find_max_id(model_list):
     return max([model.id for model in model_list], default=0)
 
 
-def get_users(with_posts: bool = False, with_comments: bool = False):
+def get_users(with_posts: bool = False, with_comments: bool = False, with_image_infos: bool = False):
     if with_posts and with_comments:
         for user in users:
             user.posts = [post for post in posts if post.user_id == user.id]
@@ -29,10 +32,18 @@ def get_users(with_posts: bool = False, with_comments: bool = False):
             # => 순환참조 에러
             user.comments = [comment for comment in comments if comment.user_id == user.id]
 
+    if with_image_infos:
+        for user in users:
+            user.image_infos = [image_info for image_info in image_infos if image_info.user_id == user.id]
+
     return users
 
 
-def get_user(user_id: int, with_posts: bool = False, with_comments: bool = False):
+def get_user(user_id: int,
+             with_posts: bool = False,
+             with_comments: bool = False,
+             with_image_infos: bool = False,
+             ):
     user = next((user for user in users if user.id == user_id), None)
     if not user:
         return None
@@ -43,10 +54,18 @@ def get_user(user_id: int, with_posts: bool = False, with_comments: bool = False
     if with_comments:
         user.comments = [comment for comment in comments if comment.user_id == user.id]
 
+    if with_image_infos:
+        user.image_infos = [image_info for image_info in image_infos if image_info.user_id == user.id]
+
     return user
 
 
-def get_user_by_username(username: str, with_posts: bool = False, with_comments: bool = False):
+def get_user_by_username(username: str,
+                         with_posts: bool = False,
+                         with_comments: bool = False,
+                         with_image_infos: bool = False,
+
+                         ):
     user = next((user for user in users if user.username == username), None)
     if not user:
         return None
@@ -57,9 +76,15 @@ def get_user_by_username(username: str, with_posts: bool = False, with_comments:
     if with_comments:
         user.comments = [comment for comment in comments if comment.user_id == user.id]
 
+    if with_image_infos:
+        user.image_infos = [image_info for image_info in image_infos if image_info.user_id == user.id]
+
     return user
 
-def get_user_by_email(email: str, with_posts: bool = False, with_comments: bool = False):
+
+def get_user_by_email(email: str, with_posts: bool = False, with_comments: bool = False,
+                      with_image_infos: bool = False,
+                      ):
     user = next((user for user in users if user.email == email), None)
     if not user:
         return None
@@ -69,6 +94,9 @@ def get_user_by_email(email: str, with_posts: bool = False, with_comments: bool 
 
     if with_comments:
         user.comments = [comment for comment in comments if comment.user_id == user.id]
+
+    if with_image_infos:
+        user.image_infos = [image_info for image_info in image_infos if image_info.user_id == user.id]
 
     return user
 
@@ -127,6 +155,7 @@ def update_user(user_id: int, data: dict):
 
     return user
 
+
 def delete_user(user_id: int):
     user = get_user(user_id)
     if not user:
@@ -136,11 +165,16 @@ def delete_user(user_id: int):
     users = [user for user in users if user.id != user_id]
 
     # one 삭제시, many도 모두 삭제한다.(CASCADE)
-    global posts, comments
+    global posts, comments, image_infos
     # Delete associated posts
     posts = [post for post in posts if post.user_id != user_id]
     # Delete associated comments
     comments = [comment for comment in comments if comment.user_id != user_id]
+
+    # Delete associated image_infos
+    # TODO: s3삭제로직도 미리삭제하도록 추가해야함.
+    image_infos = [image_info for image_info in image_infos if image_info.user_id != user_id]
+
 
 
 # def get_post(post_id: int, with_user: bool = True, with_comments: bool = False, with_comment_user: bool = False):
@@ -251,7 +285,6 @@ def create_post(data: dict):
 
     except Exception as e:
         raise e
-
 
 
 # def update_post(post_id: int, post_schema: PostSchema):
@@ -495,10 +528,10 @@ def get_tags(with_posts: bool = False):
 def create_tag(data: dict):
     try:
         # optional인 created_at을 data dict에 미리 넣어줘야 **로 생성된다?!
-        data.update({
-            'created_at': datetime.datetime.now(),
-            'updated_at': datetime.datetime.now()
-        })
+        # data.update({
+        #     'created_at': datetime.datetime.now(),
+        #     'updated_at': datetime.datetime.now()
+        # })
 
         tag = TagSchema(**data)
 
@@ -610,3 +643,24 @@ def get_post_tags_by_tag_id(tag_id: int, with_post: bool = False):
             get_post_tag(post_tag.id, with_post=True) for post_tag in post_tags
             if post_tag.tag_id == tag_id
         ]
+
+
+def create_image_info(data: dict):
+    # many생성시 one존재여부 검사 필수 -> 없으면 404 에러
+    user_id = data.get('user_id')
+    user = get_user(user_id)
+    if not user:
+        raise Exception(f"해당 user(id={user_id})가 존재하지 않습니다.")
+
+    try:
+        image_info = ImageInfoSchema(**data)
+
+        # id + created_at, updated_at 서버 부여
+        image_info.id = find_max_id(image_infos) + 1
+        image_info.created_at = image_info.updated_at = datetime.datetime.now()
+        image_infos.append(image_info)
+
+        return image_info
+
+    except Exception as e:
+        raise e

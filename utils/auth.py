@@ -5,7 +5,7 @@ from jose.exceptions import JWTClaimsError
 from passlib.context import CryptContext
 
 from config import settings
-from exceptions.template_exceptions import NotAuthorized
+from exceptions.template_exceptions import NotAuthorized, BadRequestException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -23,7 +23,11 @@ def hash_password(password):
 ############
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception as e:
+        raise BadRequestException('유효하지 않은 비밀번호가 저장되었습니다 관리자에게 문의하세요.')
+
 
 
 def create_token(data: dict, delta: int):

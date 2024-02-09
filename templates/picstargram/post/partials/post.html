@@ -2,7 +2,7 @@
     <article class="post">
         <div class="header">
             <a href="{{ url_for('pic_users') }}">
-                {% set avatar_url = url_for('uploads', path=post.user.image_url) if post.user.image_url else url_for('static', path='images/default-user.png') %}
+                {% set avatar_url = post.user.image_url if post.user.image_url else url_for('static', path='images/default-user.png') %}
                 <img src="{{ avatar_url }}" class="profile"
                      alt="{{ post.user.username }}"/>
             </a>
@@ -36,8 +36,6 @@
             <p class="fs-5 fw-bold mt-3 mb-10 px-4">{{ post.content }}</p>
             <div class="d-flex align-items-center gap-2 text-sm mb-5 flex-wrap">
                 {% for tag in post.tags %}
-                    {#                       onmouseover="this.style.backgroundColor='black'; this.style.color='white';"#}
-                    {#                       onmouseout="this.style.backgroundColor='#bebebe'; this.style.color='black';"#}
                     <a href="{{ url_for('pic_get_tag', tag_id=tag.id) }} "
                        class="btn btn-sm rounded-pill border-0 px-3 py-1"
                        style="background: linear-gradient(135deg, #3a8ffe 0%, #9658fe 100%); color: #fff; transition: background-color 0.3s, color 0.3s;"

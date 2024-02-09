@@ -59,7 +59,7 @@
             {#<a href="me.html">#}
 {#            <a href="{{ url_for('pic_me') }}">#}
             <a href="{{ url_for('pic_me') }}">
-                {% set avatar_url = url_for('uploads', path=user.image_url) if user and user.image_url else url_for('static', path='images/default-user.png') %}
+                {% set avatar_url = user.image_url if user and user.image_url else url_for('static', path='images/default-user.png') %}
                 <img src="{{ avatar_url }}" class="profile" alt="내 공간">
             </a>
         </li>

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 
+import boto3
 from PIL import Image, UnidentifiedImageError
 
 from config import settings
@@ -73,3 +74,34 @@ async def resize_and_get_image_obj_and_file_size(image_bytes, convert_size):
 
 async def get_s3_url(image_group_name, s3_file_name):
     return f"https://{settings.aws_bucket_name}.s3.{settings.aws_region}.amazonaws.com/{image_group_name}/{s3_file_name}"
+
+
+async def s3_image_upload(image_file_name, image_group_name, image_obj):
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=settings.aws_access_key_id,
+        aws_secret_access_key=settings.aws_secret_access_key,
+        region_name=settings.aws_region
+    )
+
+    buffered = BytesIO()
+    image_obj.save(buffered, format="WEBP")
+
+    s3.put_object(
+        Bucket=settings.aws_bucket_name,
+        Key=f"{image_group_name}/{image_file_name}",
+        Body=buffered.getvalue(),
+        ACL="public-read",
+        ContentType="image/webp",
+    )
+
+    return f"https://{settings.aws_bucket_name}.s3.{settings.aws_region}.amazonaws.com/{image_group_name}/{image_file_name}"
+
+
+async def background_s3_image_data_upload(to_s3_upload_data_per_size):
+    for size, data in to_s3_upload_data_per_size.items():
+        image_obj = data['image_obj']
+        image_group_name = data['image_group_name']
+        image_file_name = data['image_file_name']
+
+        await s3_image_upload(image_file_name, image_group_name, image_obj)
