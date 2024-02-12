@@ -47,7 +47,7 @@ from crud.picstargrams import users, posts, comments, get_users, get_user, creat
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
     update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
     update_tag, delete_tag, get_user_by_username, get_user_by_email, \
-    image_infos, create_image_info
+    image_infos, create_image_info, get_comments_by_post_author
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -1530,3 +1530,27 @@ async def pic_logout_user(
         request: Request,
 ):
     return redirect(request, request.url_for('pic_index'), logout=True)
+
+
+# comments
+
+@app.get("/picstargram/post/{post_id}/comments", response_class=HTMLResponse)
+# async def pic_show_comments(
+async def pic_hx_show_comments(
+        request: Request,
+        post_id: int,
+        hx_request: Optional[str] = Header(None),
+):
+
+    post = get_post(post_id, with_user=True)
+
+    comments = get_comments(post_id, with_user=True)
+
+    context = {
+        'request': request,
+        'post': post,
+        'comments': comments,
+    }
+    # return render(request, "picstargram/post/comments.html", context=context)
+    return render(request, "picstargram/post/partials/comments_modal_content.html", context=context)
+

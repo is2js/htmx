@@ -369,6 +369,20 @@ def get_comments(post_id: int, with_user: bool = False):
     return [comment for comment in comments if comment.post_id == post_id]
 
 
+def get_comments_by_post_author(post_id: int):
+    # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
+    post = get_post(post_id, with_user=True)
+    if not post:
+        return []
+
+    author = post.user
+    return [
+        get_comment(comment.id, with_user=True) for comment in comments
+        if comment.post_id == post.id and comment.user_id == author.id
+    ]
+
+
+
 def create_comment(comment_schema: CommentSchema):
     # new) many생성시 one존재여부 검사 필수 -> 없으면 404 에러
     user = get_user(comment_schema.user_id)

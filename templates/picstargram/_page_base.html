@@ -92,11 +92,14 @@
         {% include 'picstargram/_page_nav_top.html' %}
     {% endblock nav_top %}
 
-    {% if user %}
-        {% include 'picstargram/_page_nav_bottom.html' %}
-    {% else %}
 
-    {% endif %}
+    {% block nav_bottom %}
+        {% if user %}
+            {% include 'picstargram/_page_nav_bottom.html' %}
+        {% else %}
+        {% endif %}
+    {% endblock nav_bottom %}
+
 
     {% block content %}{% endblock content %}
 

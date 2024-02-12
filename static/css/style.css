@@ -175,7 +175,8 @@ body {
 .post .icons .icons-right {
 }
 
-.post .comments {
+/*.post .comments {*/
+.comments {
     padding-top: 0.5em;
     font-size: 14px;
     display: flex;
@@ -184,26 +185,40 @@ body {
 }
 
 
-.post .comment {
+/*.post .comment {*/
+.comment {
     padding: 0 0;
-    display: block;
+    /*display: block;*/
 }
 
-.post .comment .name {
+/*.post .comment .profile {*/
+.comment .profile {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+}
+
+
+/*.post .comment .name {*/
+.comment .name {
     padding-right: 0.5em;
     font-weight: bold;
     display: inline;
 }
 
-.post .comment .comment {
+/*.post .comment .comment {*/
+.comment .comment {
     display: inline;
 }
 
-.post .add-comment {
+/*.post .add-comment {*/
+.add-comment {
     padding-top: 0.5em;
 }
 
-.post .add-comment .form-control {
+/*.post .add-comment .form-control {*/
+.add-comment .form-control {
     border-top: none;
     border-left: none;
     border-right: none;
@@ -298,10 +313,36 @@ body {
 
 
 .gap-6 {
-    gap: 3.5rem!important;
+    gap: 3.5rem !important;
 }
+
 .gap-7 {
-    gap: 4rem!important;
-}.gap-8 {
-    gap: 4.5rem!important;
+    gap: 4rem !important;
+}
+
+.gap-8 {
+    gap: 4.5rem !important;
+}
+
+.btn-post {
+    background-color: transparent;
+    border: 0;
+    color: #c4dffd;
+
+    font-weight: 600;
+}
+
+.btn-post:focus,
+.btn-post:hover {
+    background-color: transparent !important;
+    color: #0056b3;
+    box-shadow: none !important;
+}
+
+.fs-6 {
+    font-size: .85rem !important;
+}
+
+.fs-7 {
+    font-size: .75rem !important;
 }
