@@ -118,6 +118,7 @@
             </div>
             <div id="cancel-btn"><i class="bi bi-x-circle-fill"></i></div>
             <div class="file-name">파일 이름 자리</div>
+            <input type="text" id="file-name-input" name="fileName" hidden value="">
         </div>
         <input type="file" id="default-btn" name="{{ name }}" hidden {{ required }} value="{{ value }}">
         <button type="button" id="custom-btn" class="btn btn-sm {{ btn_class }}"
@@ -131,6 +132,7 @@
         var customBtn = document.querySelector("#custom-btn");
         var previewImg = document.querySelector("#{{name}}-img");
         var filenameDiv = document.querySelector(".file-name");
+        var filenameInput = document.querySelector("#file-name-input");
         var regExp = /[0-9a-zA-Z가-힣\^\&\'\@\{\}\[\]\,\$\=\!\-\#\(\)\.\%\+\~\_ ]+$/;
 
 
@@ -281,7 +283,9 @@
             // var fileName = this.value;
             var fileName = file.name;
             if (fileName) {
-                filenameDiv.textContent = fileName.match(regExp);
+                const convertedFileName = fileName.match(regExp);
+                filenameDiv.textContent = convertedFileName;
+                filenameInput.value = convertedFileName;
             }
         }
 

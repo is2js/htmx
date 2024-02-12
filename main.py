@@ -1207,61 +1207,51 @@ async def pic_hx_form(
         return '준비되지 않은 modal입니다.'
 
 
-@app.post("/picstargram/posts/new")
+@app.post("/picstargram/posts/new", response_class=HTMLResponse)
+@login_required
 async def pic_new_post(
         request: Request,
-        response: Response,
+        bg_task: BackgroundTasks,
         post_create_req=Depends(PostCreateReq.as_form),
-        file: Union[UploadFile, None] = None
 ):
     try:
         # 1) form데이터는 crud하기 전에 dict로 만들어야한다.
         data = post_create_req.model_dump()
 
-        # 임시 user TODO: 로그인 구현시 현재 사용자가 들어와야함.
-        data.update({'user_id': 1})
+        # 2) post와 상관없은 optional image 업로드 schema를 pop으로 빼놓는다.
+        upload_image_req: dict = data.pop('upload_image_req')
+        # 3) image 업로드 scheema가 존재하면, 다시 Schema로 만들어서 upload API로 보낸다.
+        # -> image_group_name은 호출하는 곳(post, user_profile)에 따라 다르게 보낸다.
+        # -> 응답으로 온 정보 중 bg_task가 아닌 순차적 처리된 thumbnail은 바로 꺼내서 url을
+        #    post용 data에 필드명(image_url)로 넣어준다.
+        if upload_image_req:
+            image_info: ImageInfoSchema = await pic_uploader(
+                request,
+                bg_task,
+                UploadImageReq(**upload_image_req),
+                image_group_name='post',
+                thumbnail_size=500,
+            )
 
-        # 2) file필드는 따로 처리한다. but req schema에는 입력X 처리후 dump된 dict에 반영할 준비를 한다.
-        if not file:
-            # post_create_req.image_url = None  => schema에 없는 필드는 동적으로 줄 수없다(python obj와 다름)
-            image_url = None
-        else:
-            # 파일처리 -> TODO: 임시 image_url 입력
-            image_url = "images/post-0001.jpeg"
-        data.update({'image_url': image_url})
-        # data  >> {'content': 'a', 'tags': [{'name': 'a'}, {'name': 'b'}, {'name': 'v'}], 'image_url': URL('http://localhost:8000/uploads/images/post-0001.jpeg')}
+            thumbnail_url = image_info.image_url_data['thumbnail']
+            data['image_url'] = thumbnail_url
+
+            # 5) post에 대한 1:1 image_info schema를 추가해준다.
+            # -> image_info.image_url_data[ size ] 를 뽑아내기 위함.
+            data['image_info'] = image_info
+
+        # 4) 로그인된 유저의 id도 넣어준다.
+        data['user_id'] = request.state.user.id
 
         post = create_post(data)
 
-        # 4) render함수로 처리한다.
-        # return render(request, status_code=status.HTTP_204_NO_CONTENT,
-        return render(request, "",
-                      hx_trigger=["postsChanged"],
-                      messages=[Message.CREATE.write("포스트", level=MessageLevel.INFO)]
-                      )
+    except:
+        raise BadRequestException('유저 수정에 실패함.')
 
-        # 3) temaplate에서는 생성 성공시 list 화면으로 redirect한다. => htmx를 이용해 Nocontent + Hx-Trigger를 응답한다.
-        response.status_code = status.HTTP_204_NO_CONTENT
-        # response.headers["HX-Trigger"] = "postsChanged"
-        response.headers["HX-Trigger"] = json.dumps({
-            "postsChanged": None,
-            # "showMessage": f"post({post.id}) added."
-            "showMessage": Message.CREATE.write("포스트", level=MessageLevel.INFO)['text']
-        })
-        return response
-
-    except Exception as e:
-        # TODO: 템플릿 에러 처리.
-        print(f"e  >> {e}")
-
-        raise e
-
-    # response.status_code = 204
-    # return response
-
-    # except Exception as e:
-    #     response.status_code = 400
-    #     return f"Post 생성에 실패했습니다.: {e}"
+    return render(request, "",
+                  hx_trigger=["postsChanged"],
+                  messages=[Message.CREATE.write("포스트", level=MessageLevel.INFO)]
+                  )
 
 
 @app.get("/picstargram/me/", response_class=HTMLResponse)
@@ -1287,9 +1277,6 @@ async def pic_hx_edit_user(
     # {..., {'upload_image_req': {'image_bytes': '', 'image_file_name': 'bubu.png', 'image_group_name': '미분류'}}
     # -> user모델 데이터가 아닌 것으로서, 미리 pop으로 빼놓기
     upload_image_req: dict = data.pop('upload_image_req')
-
-    user = request.state.user
-
     if upload_image_req:
         # pop해놓은 dict를 다시 Schema로 감싸서 보내기
         image_info: ImageInfoSchema = await pic_uploader(
@@ -1301,6 +1288,8 @@ async def pic_hx_edit_user(
 
         thumbnail_url = image_info.image_url_data['thumbnail']
         data['image_url'] = thumbnail_url
+
+    user = request.state.user
 
     # 업데이트 user -> 업데이트 token for request.state.user
     try:
@@ -1328,9 +1317,10 @@ async def pic_uploader(
         bg_task: BackgroundTasks,
         upload_image_req: UploadImageReq,
         image_group_name: str,
+        thumbnail_size: int = 200,
 ):
     uuid = str(uuid4())  # for s3 file_name
-    thumbnail_size = (200, 200)  # 원본대신 정사각 thumbnail
+    thumbnail_size = (thumbnail_size, thumbnail_size)  # 원본대신 정사각 thumbnail
     image_convert_sizes = [512, 1024, 1920]  # 이것보다 width가 크면 ratio유지 resize
 
     data = upload_image_req.model_dump()
@@ -1362,6 +1352,9 @@ async def pic_uploader(
     image_objs_per_size = dict(thumbnail=thumbnail_image_obj)
     total_file_size = thumbnail_file_size
 
+    # max_size 판별용 변수
+    max_size = thumbnail_size[0]
+
     for convert_size in image_convert_sizes:
         # 원본 width가 정해진 size보다 클 때만, ratio resize 후 추가됨.
         # -> 512보다 작으면 only thumbnail만 추가된다.
@@ -1371,17 +1364,20 @@ async def pic_uploader(
                 convert_size
             )
 
+            # 조건을 만족하는 경우마다 max_size 갱신
+            max_size = convert_size
+
             # 누적변수2개에 각각 추가
             image_objs_per_size[convert_size] = resized_image
             total_file_size += resized_file_size
 
-    # print(f"image_objs_per_size  >> {image_objs_per_size}")
-    # print(f"total_file_size  >> {total_file_size}")
+    # max size 판단
+    if max_size == thumbnail_size[0]:
+        max_size = 'thumbnail'
 
     # 4) (1)업로드완료가정 접속url size별dict + (2)업로드에 필요한 데이터 size별dict
     #    (1) s3_urls_per_size: [DB에 size(key)별-저장될 s3_url(value) 저장할 JSON]정보 넣기
     #    (2) to_s3_upload_data_per_size: s3업로드에 필요한 size별-[image객체] + [image_group_name] + [uuid_size.webp의 업로드될파일명] 정보 넣기
-
     s3_urls_per_size = {}  # for db-json 필드: size별 s3 upload완료되고 접속할 주소들
     to_s3_upload_data_per_size = {}  # for s3 upload: size별 업로드에 필요한 데이터 1) image_obj, 2) 부모폴더명 3) 파일명
 
@@ -1421,6 +1417,8 @@ async def pic_uploader(
         'uuid': uuid,
         'total_file_size': total_file_size,
         'image_url_data': s3_urls_per_size,
+
+        'max_size': max_size
     }
 
     image_info = create_image_info(image_info_data)
@@ -1541,7 +1539,6 @@ async def pic_hx_show_comments(
         post_id: int,
         hx_request: Optional[str] = Header(None),
 ):
-
     post = get_post(post_id, with_user=True)
 
     comments = get_comments(post_id, with_user=True)
@@ -1553,4 +1550,3 @@ async def pic_hx_show_comments(
     }
     # return render(request, "picstargram/post/comments.html", context=context)
     return render(request, "picstargram/post/partials/comments_modal_content.html", context=context)
-

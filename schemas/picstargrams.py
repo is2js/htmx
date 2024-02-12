@@ -191,6 +191,8 @@ class ImageInfoSchema(BaseModel):
     user_id: int # user에 대한 many
     # user: Optional[UserSchema] = None # many to one인데 할일 없어서 생략
 
+    max_size: Union[str, int] # 'thumbnail' or 512 or 1024 or 1920
+
 
 class UserEditReq(BaseModel):
     username: Optional[str] = None
@@ -245,6 +247,8 @@ class PostSchema(BaseModel):
     likes: Optional[List['LikeSchema']] = []
     tags: Optional[List['TagSchema']] = []
 
+    image_info: Optional['ImageInfoSchema'] = None
+
 
 class TagCreateReq(BaseModel):
     # value (input[name=""]) -> name (Schmea-field)
@@ -252,29 +256,31 @@ class TagCreateReq(BaseModel):
 
 
 class PostCreateReq(BaseModel):
-    # content: str
     content: str
 
-    # image_url: Optional[str] = None
-    # image_url: Optional[str] = None
-    # created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
-    # updated_at: Optional[datetime.datetime]
-    # user_id: int
-
-    # user: Optional[UserSchema] = None
     tags: Optional[List[TagCreateReq]]
+
+    upload_image_req: Optional[UploadImageReq] = None
 
     @classmethod
     def as_form(
             cls,
             content: str = Form(...),
             tags: str = Form(None),
+
+            upload_image_req: Optional[UploadImageReq] = Depends(UploadImageReq.as_form),
     ):
         # obj array [string] to dict list [python]
         if tags:
             tags = json.loads(tags)
 
-        return cls(content=content, tags=tags)
+        print(f"tags  >> {tags}")
+
+
+        return cls(content=content, tags=tags,
+
+                   upload_image_req=upload_image_req,
+                   )
 
     # @field_validator('tags', mode="before")
     # @classmethod
@@ -325,8 +331,8 @@ class LikeSchema(BaseModel):
 class TagSchema(BaseModel):
     id: Optional[int] = None
     name: str
-    created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
-    updated_at: Optional[datetime.datetime]
+    created_at: Optional[datetime.datetime] = None # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    updated_at: Optional[datetime.datetime] = None
 
     posts: Optional[List[PostSchema]] = []  # tag.posts 해당 tag에 속한 글들
 

@@ -30,7 +30,10 @@
         </div>
         <div class="contents">
             {% if post.image_url %}
-                <img class="img-fluid" alt="100%x250" src="{{ url_for('uploads', path=post.image_url) }}">
+                {% if post.image_info %} {{ post.image_info.max_size }}{% endif %}
+                <img class="w-100 img-fluid" alt="content"
+                     src="{{ post.image_url }}"
+                >
             {% endif %}
             {# 추가 텍스트 post.content + tag #}
             {#<p class="fs-5 fw-bold mt-3 mb-10 px-4">{{ post.content }}</p>#}
