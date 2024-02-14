@@ -1,7 +1,7 @@
 <div class="comment d-flex ">
     <div class="d-inline me-2">
         <a href="{{ url_for('pic_users') }}">
-            {% set avatar_url = comment.user.image_url if comment.user.image_url else url_for('static', path='images/default-user.png') %}
+            {% set avatar_url = comment.user.profile_url if comment.user.profile_url else url_for('static', path='images/default-user.png') %}
             <img src="{{ avatar_url }}"
                  class="profile"
                  alt="{{ comment.user.username }}"/>

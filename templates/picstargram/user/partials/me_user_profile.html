@@ -1,7 +1,7 @@
 <div class="container user" hx-swap-oob="outerHTML" id="user-profile">
 
     <div class="user-header">
-        {% set avatar_url = user.image_url if user and user.image_url else url_for('static', path='images/default-user.png') %}
+        {% set avatar_url = user.profile_url if user and user.profile_url else url_for('static', path='images/default-user.png') %}
         <img src="{{ avatar_url }}"
              class="profile"
              alt="내 공간"
@@ -50,7 +50,7 @@
 
         function reloadImage() {
         var img = document.getElementById('dynamicImage');
-        var currentSrc = "{{ user.image_url }}";
+        var currentSrc = "{{ user.profile_url }}";
 
         isImageValid(currentSrc, function(valid) {
             if (valid) {

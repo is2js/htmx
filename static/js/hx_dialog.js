@@ -1,6 +1,9 @@
 const modalElement = document.getElementById('modal');
 const modal = new bootstrap.Modal(modalElement);
 
+const mediaModalElement = document.getElementById('mediaModal');
+const mediaModal = new bootstrap.Modal(mediaModalElement);
+
 ;(function () {
     // 서버렌더링 html을 직접적으로 swap못하여 hx-target="#id명시"가 불가능한 경우 ex CUD로 204 NoContent => modal요소 .hide();
     // 즉, 신호만 받고 다른 것을 변경해야하는 경우 -> hx-target="this"만 걸어두고 여기서 target.id를 확인하여 -> 이벤트를 처리한다.
@@ -11,6 +14,12 @@ const modal = new bootstrap.Modal(modalElement);
             const currentModal = bootstrap.Modal.getInstance(modalElement)
             currentModal.show();
         }
+
+        if (evt.detail.target.id === 'mediaDialog') {
+            const currentModal = bootstrap.Modal.getInstance(mediaModalElement)
+            currentModal.show();
+        }
+
     })
 
 
@@ -44,13 +53,19 @@ const modal = new bootstrap.Modal(modalElement);
         if (currentModal && modalElement.classList.contains("show")) {
             currentModal.hide();
         }
+
+        const currentMediaModal = bootstrap.Modal.getInstance(mediaModalElement)
+        if (currentMediaModal && mediaModalElement.classList.contains("show")) {
+            currentMediaModal.hide();
+        }
+
         evt.detail.shouldSwap = false // 200이라도 swap안일어나게 만들기
     })
 
     // modal이 닫히는 event(hidden.bs.modal by modal.hide(); ) -> dialog의 내용 지우기
     htmx.on("hidden.bs.modal", () => {
-        console.log('hidden.bs.modal by modal.hide();')
         document.getElementById("dialog").innerHTML = ""
+        document.getElementById("mediaDialog").innerHTML = ""
     })
 
 })();

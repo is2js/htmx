@@ -21,7 +21,7 @@
             {{ _form.inline_input(
                 type="avatar",
                 user=user,
-                avatar_url=user.image_url if user.image_url else url_for('static', path='images/default-user.png'),
+                avatar_url=user.profile_url if user.profile_url else url_for('static', path='images/default-user.png'),
                 bg_color='#e8f0fe',
                 width='100%;max-width:500px;',
                 label='프로필 사진',

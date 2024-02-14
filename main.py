@@ -1144,6 +1144,7 @@ async def pic_hx_show_posts(
         hx_request: Optional[str] = Header(None),
 ):
     posts = get_posts(with_user=True, with_tags=True, with_likes=True, with_comments=True)
+    posts = reversed(posts)
 
     context = {
         'request': request,
@@ -1234,7 +1235,8 @@ async def pic_new_post(
             )
 
             thumbnail_url = image_info.image_url_data['thumbnail']
-            data['image_url'] = thumbnail_url
+            # data['image_url'] = thumbnail_url
+            data['thumbnail_url'] = thumbnail_url
 
             # 5) post에 대한 1:1 image_info schema를 추가해준다.
             # -> image_info.image_url_data[ size ] 를 뽑아내기 위함.
@@ -1252,6 +1254,21 @@ async def pic_new_post(
                   hx_trigger=["postsChanged"],
                   messages=[Message.CREATE.write("포스트", level=MessageLevel.INFO)]
                   )
+
+
+@app.get("/picstargram/posts/{post_id}/image", response_class=HTMLResponse)
+async def pic_hx_show_post_image(
+        request: Request,
+        post_id: int,
+):
+    post = get_post(post_id)
+
+    context = dict(
+        max_size=post.image_info.max_size,
+        image_url_data=post.image_info.image_url_data,
+        file_name=post.image_info.file_name,
+    )
+    return render(request, "picstargram/partials/image_modal_content.html", context=context)
 
 
 @app.get("/picstargram/me/", response_class=HTMLResponse)
@@ -1287,7 +1304,8 @@ async def pic_hx_edit_user(
         )
 
         thumbnail_url = image_info.image_url_data['thumbnail']
-        data['image_url'] = thumbnail_url
+        data['profile_url'] = thumbnail_url
+        data['image_info'] = image_info
 
     user = request.state.user
 

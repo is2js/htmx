@@ -108,13 +108,25 @@
     <div class="modal modal-blur fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
         {# 여기서 hx요청없이 hx-target="this"는 submit시 발생하는 204 evt(swap)시에 beforeSwap에 잡히도록 걸어주는 것으로
            -> evt.detail.target.id가 "diaglog"까지 확인하여 modal.hide()시키기 위해. evt에 잡히도록 거는 것 #}
-        <div class="modal-dialog modal-dialog-centered" id="dialog" hx-target="this">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+             id="dialog" hx-target="this"
+        >
             {# inject htmx here #}
         </div>
     </div>
+
+    <!-- Media Modal(max-width: max-content) -->
+    <div class="modal modal-blur fade bg-dark" id="mediaModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+             id="mediaDialog" hx-target="this" style="max-width: max-content!important;"
+        >
+            {# inject htmx here #}
+        </div>
+    </div>
+
     <!-- 지원안한다는 Modal -->
     <div class="modal fade" id="notsupportedModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-dialog modal-sm modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-body text-center">
                     <p>아직 지원하지 않는 기능입니다</p>

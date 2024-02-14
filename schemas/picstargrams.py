@@ -17,13 +17,17 @@ class UserSchema(BaseModel):
     hashed_password: str  # 추가
     username: str
     description: Optional[str] = None
-    image_url: Optional[str] = None
+    # image_url: Optional[str] = None
+    profile_url: Optional[str] = None
 
     created_at: Optional[datetime.datetime] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
     updated_at: Optional[datetime.datetime] = None  # None을 줘야, 안들어와도 허용된다.
 
     posts: Optional[List['PostSchema']] = []  # None으로 주면, docs에서 예시 전체가 뜨므로, []로 줘서 []만 뜨게 한다.
     comments: Optional[List['CommentSchema']] = []  # None으로 주면, docs에서 예시 전체가 뜨므로, []로 줘서 []만 뜨게 한다.
+
+    image_info: Optional['ImageInfoSchema'] = None
+
 
     def get_token(self):
         "TODO: sqlalchemy User 모델 이관"
@@ -34,7 +38,8 @@ class UserSchema(BaseModel):
                     email=self.email,
                     username=self.username,
                     description=self.description,
-                    image_url=self.image_url,
+                    # image_url=self.image_url,
+                    profile_url=self.profile_url,
                     # staff=self.is_admin),
                     # 그외 exp, iat iss는 create_token 내부에서
                 ),
@@ -64,7 +69,8 @@ class UserSchema(BaseModel):
                         email=self.email,
                         description=self.description,
                         username=self.username,
-                        image_url=self.image_url,
+                        # image_url=self.image_url,
+                        profile_url=self.profile_url,
                         # staff=self.is_admin),
                         # 그외 exp, iat iss는 create_token 내부에서
                     ),
@@ -144,7 +150,8 @@ class UserToken(BaseModel):
     description: Optional[str] = None
     # hashed_password: str
     username: str
-    image_url: Optional[str] = None
+    # image_url: Optional[str] = None
+    profile_url: Optional[str] = None
 
 
 # Upload Image
@@ -186,12 +193,13 @@ class ImageInfoSchema(BaseModel):
     file_extension: str
     uuid: str
     total_file_size: int
+
+    max_size: Union[str, int] # 'thumbnail' or 512 or 1024 or 1920
     image_url_data: dict
 
     user_id: int # user에 대한 many
     # user: Optional[UserSchema] = None # many to one인데 할일 없어서 생략
 
-    max_size: Union[str, int] # 'thumbnail' or 512 or 1024 or 1920
 
 
 class UserEditReq(BaseModel):
@@ -234,7 +242,8 @@ class PostSchema(BaseModel):
     id: Optional[int] = None
     # title: str
     content: str
-    image_url: Optional[str] = None
+    # image_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
     # Optional필드도 = None을 부여해야, backend에서 Schema(**data)시 필드에러 안난다.
     created_at: Optional[datetime.datetime] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
     updated_at: Optional[datetime.datetime] = None

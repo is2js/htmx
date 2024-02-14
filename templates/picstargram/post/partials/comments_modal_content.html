@@ -15,7 +15,7 @@
             <div class="comment d-flex">
                 <div class="d-inline me-2">
                     <a href="{{ url_for('pic_users') }}">
-                        {% set avatar_url = post.user.image_url if post.user.image_url else url_for('static', path='images/default-user.png') %}
+                        {% set avatar_url = post.user.profile_url if post.user.profile_url else url_for('static', path='images/default-user.png') %}
                         <img src="{{ avatar_url }}"
                              class="profile"
                              alt="{{ post.user.username }}"/>
