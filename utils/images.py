@@ -3,9 +3,11 @@ from __future__ import annotations
 from io import BytesIO
 
 import boto3
+import botocore
 from PIL import Image, UnidentifiedImageError
 
 from config import settings
+from schemas.picstargrams import ImageInfoSchema
 
 
 async def get_image_size_and_ext(image_bytes: bytes) -> tuple:
@@ -105,3 +107,36 @@ async def background_s3_image_data_upload(to_s3_upload_data_per_size):
         image_file_name = data['image_file_name']
 
         await s3_image_upload(image_file_name, image_group_name, image_obj)
+
+
+async def s3_download(file_name: str) -> bytes:
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=settings.aws_access_key_id,
+        aws_secret_access_key=settings.aws_secret_access_key,
+        region_name=settings.aws_region
+    )
+
+    file_obj: dict = s3.get_object(
+        Bucket=settings.aws_bucket_name,
+        Key=file_name
+    )
+    # type(file_obj)  >> <class 'dict'>
+    # type(file_obj['Body'])  >> <class 'botocore.response.StreamingBody'>
+    # type(file_obj['Body']).read()  >> <class 'bytes'>
+
+    # 파일명(key)가 s3에 존재하지 않을 때
+    # -> botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+
+    file_content: bytes = file_obj['Body'].read()
+
+    return file_content
+
+
+async def convert_buffer_format(image_bytes: bytes, format_: str = 'png') -> bytes:
+    current_image = Image.open(BytesIO(image_bytes))
+
+    convert_buffered = BytesIO()
+    current_image.save(convert_buffered, format=format_)
+
+    return convert_buffered.getvalue()

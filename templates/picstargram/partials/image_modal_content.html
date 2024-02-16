@@ -1,9 +1,32 @@
+{% set sizes = image_info.image_url_data.keys() | reject('eq', 'thumbnail') | list | sort %}
+{% set max_size = sizes[-1] %}
+{% set image_url_data = image_info.image_url_data %}
+{% set image_group_name = image_info.image_group_name %}
+{% set uuid = image_info.uuid %}
+{% set download_file_name = image_info.file_name %}
+{% set download_file_extension = image_info.file_extension %}
+
+
 <div class="modal-content bg-dark border-0 rounded-0" style="max-width: {{ max_size }}px;">
     <!-- header -->
     <div class="modal-header border-bottom-0">
-        {#        <h1 class="modal-title fs-5 fw-bold mx-auto" id="modalLabel">#}
-        {#            이미지 원본 보기#}
-        {#        </h1>#}
+        <div class="d-flex mx-auto gap-3" id="modalLabel">
+            {% for size in sizes %}
+                {% set s3_key = image_group_name + '/' + uuid + '_' + size | string  + '.webp' %}
+                <a href="{{ url_for('pic_image_download').include_query_params(
+                            s3_key=s3_key,
+
+                            download_file_name=download_file_name,
+                            download_file_size=size,
+                            download_file_extension=download_file_extension
+                        ) }}"
+                >
+                    <button class="btn btn-sm btn-outline-light rounded fs-7">
+                        <i class="bi bi-file-earmark-arrow-down"></i> {{ size }}px
+                    </button>
+                </a>
+            {% endfor %}
+        </div>
         <button type="button"
                 class="btn-close position-absolute end-0 me-2 btn-close-white"
                 data-bs-dismiss="modal"
@@ -13,16 +36,16 @@
     <!-- body -->
     <div class="modal-body">
         <picture>
-            {% for size, url in image_url_data.items() %}
-                {% if size == 'thumbnail' %}
-                    {# 1. thumbnail은 pass #}
-                {% elif size == max_size %}
-                    {# 2. 마지막크기는 img태그로 #}
-                    <img class="img-fluid w-100" alt="{{ file_name }}" src="{{ url }}">
+            {% for size in sizes %}
+                {% if size == max_size %}
+                    {# 1. 마지막크기는 img태그로 #}
+                    <img class="img-fluid w-100" src="{{ image_url_data.get(size) }}"
+                         alt="{{ download_file_name + '.' + download_file_extension }}"
+                    >
                 {% else %}
-                    {# 3. 그외에 size + url을 source태그에 media="(max-width: px)"에 넣어주면서 srcset으로 url지정 #}
+                    {# 2. 그외에 size + url을 source태그에 media="(max-width: px)"에 넣어주면서 srcset으로 url지정 #}
                     <!-- show this up to size -->
-                    <source media="(max-width: {{ size }}px)" srcset="{{ url }}">
+                    <source media="(max-width: {{ size }}px)" srcset="{{ image_url_data.get(size) }}">
                 {% endif %}
             {% endfor %}
         </picture>

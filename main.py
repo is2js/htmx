@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import pathlib
+import urllib
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 from uuid import uuid4
 
-import requests
 from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
+from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
 import models
@@ -36,7 +36,8 @@ from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4
 from utils.auth import verify_password
 from utils.https import render, redirect
 from utils.images import get_image_size_and_ext, get_thumbnail_image_obj_and_file_size, \
-    resize_and_get_image_obj_and_file_size, get_s3_url, background_s3_image_data_upload, s3_image_upload
+    resize_and_get_image_obj_and_file_size, get_s3_url, background_s3_image_data_upload, s3_image_upload, s3_download, \
+    convert_buffer_format
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -1255,7 +1256,6 @@ async def pic_new_post(
                   messages=[Message.CREATE.write("포스트", level=MessageLevel.INFO)]
                   )
 
-
 @app.get("/picstargram/posts/{post_id}/image", response_class=HTMLResponse)
 async def pic_hx_show_post_image(
         request: Request,
@@ -1263,13 +1263,74 @@ async def pic_hx_show_post_image(
 ):
     post = get_post(post_id)
 
+    image_info: ImageInfoSchema = post.image_info
+
+
     context = dict(
-        max_size=post.image_info.max_size,
-        image_url_data=post.image_info.image_url_data,
-        file_name=post.image_info.file_name,
+        image_info=image_info.model_dump(),
+        # size별 이미지 source제공을 위한
+        # max_size=image_info.max_size,
+        # image_url_data=image_info.image_url_data,
+        # file_name=image_info.file_name,
+        # # 다운로드 링크 제공을 위한
+        # image_group_name=image_info.image_group_name,
+        # uuid=image_info.uuid,
+        # download_file_extension=image_info.file_extension,
     )
     return render(request, "picstargram/partials/image_modal_content.html", context=context)
 
+
+@app.get("/picstargram/download")
+async def pic_download(
+        request: Request,
+        s3_key: str,
+):
+    try:
+        buffer: bytes = await s3_download(s3_key)
+    except Exception as e:
+        raise BadRequestException(f'해당 파일({s3_key}) 다운로드에 실패했습니다.')
+
+    return Response(
+        content=buffer,
+        headers={
+            'Content-Disposition': f'attachment; filename*=UTF-8\'\'{urllib.parse.quote(s3_key)}',
+            'Content-Type': 'application/octet-stream',
+        }
+    )
+
+
+@app.get("/picstargram/image_download")
+async def pic_image_download(
+        request: Request,
+        s3_key: str,
+
+        download_file_size: str,
+        download_file_name: Union[str, None] = None,
+        download_file_extension: Union[str, None] = 'png',
+):
+
+    try:
+        buffer: bytes = await s3_download(s3_key)
+    except Exception as e:
+        raise BadRequestException(f'해당 파일({s3_key}) 다운로드에 실패했습니다.')
+
+    # 따로 다운로드파일명이 안주어지면, bucket key(확장자 포함)로 대체
+    if not download_file_name:
+        download_file_name = s3_key
+
+    # 다운로드파일명이 따로오면, _ + 선택된size + . +  다운로드 확장자 로 합체
+    else:
+        download_file_name += '_' + download_file_size + '.' + download_file_extension
+
+    buffer = await convert_buffer_format(buffer, download_file_extension.lower())
+
+    return Response(
+        content=buffer,
+        headers={
+            'Content-Disposition': f'attachment; filename*=UTF-8\'\'{urllib.parse.quote(download_file_name)}',
+            'Content-Type': 'application/octet-stream',
+        }
+    )
 
 @app.get("/picstargram/me/", response_class=HTMLResponse)
 @login_required
@@ -1343,8 +1404,10 @@ async def pic_uploader(
 
     data = upload_image_req.model_dump()
     # image_group_name = data['image_group_name']
-    # TODO: for db -> 추후 다운로드시 이 이름을 사용
+    # for db -> download시 활용
     image_file_name = data['image_file_name']
+    image_file_name = image_file_name.rsplit('.', 1)[0] # 최대 2개까지 .을 떼어낸 뒤, 맨 첫번째것만
+    # 확장자 있으면 빼주기
     image_bytes = data['image_bytes']
 
     # 1) image_bytes -> BytesIO+Image.open() -> image객체
