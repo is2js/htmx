@@ -10,10 +10,24 @@
 4. `AWS S3`를 사용하여, 1개의 이미지에 대해 `thumbnail(기본) + 정해진 size들(512, 1024, 1920)`까지 기본 생성하여 저장되도록 합니다.
     - **업로드 -> `s3에 webp`형식으로 thumbnail만 동기적으로 처리하여 view에 표시 + 512, 1024px은 background 업로드**
     - **다운로드 -> `원본파일명.원본확장자`를 512, 1024px로 다운로드 할 수 있음.**
-    - **thumbnail클릭시, `modal + srcset`을 이용하여 `cutoff에 따른 size별 image를 렌더링`하게 됩니다.**
+    - **thumbnail클릭시, `modal + srcset`을 이용하여 `cutoff에 따른 size별 최적의 image를 렌더링`하게 됩니다.**
 
 5. frontend framework나 jquery 등의 요청이 아닌 `미들웨어에서 refresh token`을 사용하는 도전도 해보았습니다.
 
 ### 데모
 
-![58cd8530-1606-4cb2-be9b-13633a7000e0](https://raw.githubusercontent.com/is2js/screenshots/main/58cd8530-1606-4cb2-be9b-13633a7000e0.gif)
+1. **로그인/회원가입 화면을 `htmx`를 이용하여, 화면전환 없는 `modal`  + `tab 전환`이 가능하다.**
+
+    ![a8a3b931-1301-475e-8876-8841cee9d03c](https://raw.githubusercontent.com/is2js/screenshots/main/a8a3b931-1301-475e-8876-8841cee9d03c.gif)
+
+2. **post를 생성하면, thumbnail+512+1024+1960 size별 `S3에는 uuid + webp형식` , `사용자 다운로드시 원본파일명 + 원본확장자형식`으로 다운로드**
+
+    ![043c1897-7a6b-4efc-9447-96498d6bd096](https://raw.githubusercontent.com/is2js/screenshots/main/043c1897-7a6b-4efc-9447-96498d6bd096.gif)
+
+3. **`javascript + jquery가 없는 것`이 장점인 htmx스택에서, refresh token을 middelware에서 사용하는 방식을 최초 시도해 보았음.**
+
+    ![f3c54017-d8bf-4c3c-b58d-ecd33f27643b](https://raw.githubusercontent.com/is2js/screenshots/main/f3c54017-d8bf-4c3c-b58d-ecd33f27643b.gif)
+
+4. **bootstrap `modal과 toast의 부모태그를 지속 재활용`하여 base.html에 1개만 존재하면, 모든 상속 템플릿 html에서 쉽게 호출 가능**
+
+    ![64913b77-605f-4e2b-9add-13bb18edbf9a](https://raw.githubusercontent.com/is2js/screenshots/main/64913b77-605f-4e2b-9add-13bb18edbf9a.gif)
