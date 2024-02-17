@@ -550,5 +550,110 @@
 6. login form을 붜오는 모든 hx-get / hx-post는 next처리 해준다.
  
 
-#### 페이지 라우터에 거는 @login_required는 일반 요청 ->hx 요청이 아니면 messages(toast)를 담당하는 oob 또는 hx-trigger로 loginModal 오픈이 안된다.
-- 추후에는 그냥 login페이지를 만들 듯.
+### 페이지 라우터에 거는 @login_required는 일반 요청 ->hx 요청이 아니면 messages(toast)를 담당하는 oob 또는 hx-trigger로 loginModal 오픈이 안된다.
+1. login_required내부에서 hx request인지 확인해야하는데, route의 파라미터 `hx_request: Optional[str] = Header(None)`를 쓸 수 없으니, 
+    - **직접 headers에서 꺼내서 확인하는 함수를 만든다. `request.headers`에서 get으로 꺼내고, javascript의 lower `true` string를 가지고 판단한다**
+    ```python
+    def is_htmx(request: Request):
+        return request.headers.get("hx-request") == 'true'
+    ```
+   
+
+2. 내부에서는 is_htmx일때만, error toast를 render()해주는 TemplateException을 raise한다.
+    ```python
+    def login_required(func):
+        @wraps(func)
+        async def wrapper(request: Request, *args, **kwargs):
+            if not request.state.user:
+                if is_htmx(request):
+                    raise NotAuthorized('로그인이 필요합니다.')
+                else:
+                    response = redirect(
+                        request,
+                        path=request.url_for('pic_index').include_query_params(next=request.url),
+                    )
+                    return response
+        return wrapper
+    ```
+   
+### modal을 띄우는 hx-request에서 toast는 뜨는데 modal이 noContent가 hx-response로 가는데도 안닫힌다?
+#### 문제점
+1. is_htmx request로서 render("")로 hx-trigger noContent가 포함되지만, `modal.hide()가 먹히지 않는다`?
+2. **hx_dialog.js를 살펴보니**
+    - noContent에 대한 htmx.on은 바로 작동한다.
+    ```js
+    htmx.on("noContent", (evt) => {
+        const currentModal = bootstrap.Modal.getInstance(modalElement)
+        // if (currentModal && modalElement.classList.contains("show")) {
+        if (currentModal || modalElement.classList.contains("show")) {
+            currentModal.hide();
+        }
+    ```
+   - **하지만, modal을 띄우는 `.show()`는, `hide()가 작동하는 시점(htmx.on - hx-trigger)`보다 더 이후인 `htmx.on( afterSwap )`에서 작동하기 때문에**
+       - **modal.hide() 가 먼저 작동 -> swap -> modal.show() 순서로 작동되기 때문이다.**
+```js
+// modal이 열리는 것은 response -> swap완료(html교체) -> modal show
+htmx.on('htmx:afterSwap', function (evt) {
+    if (evt.detail.target.id === 'dialog') {
+        const currentModal = bootstrap.Modal.getInstance(modalElement)
+        currentModal.show();
+    }
+// modal이 닫히는 것은 response -> hx-trigger -> modal hide 
+htmx.on("noContent", (evt) => {
+    const currentModal = bootstrap.Modal.getInstance(modalElement)
+    if (currentModal && modalElement.classList.contains("show")) {
+        currentModal.hide();
+
+    }
+}
+// => afterSwap보다 먼저 작동하여, [클릭 -> response -> hx-trigger modal hide -> swap -> afterSwap: modal hide]로
+// => response시 닫아라고 명령했는데, 열리는 것보다 먼저 닫히는 동작을 수행하여
+// => 계속 열려있게 된다.    
+
+```
+
+#### 해결법
+1. 모달이 열리는 동작(afterSwap)은, 닫히는 동작(trigger)에 비해에 늦으니
+    - **닫히는 동작일 땐, 먼저 작동하는 hide 대신, `뒤늦게 show가 안되도록 미리 modal객체를 dispose`를 미리하고**
+    - **평상시 show 동작은 dispose되서, modal객체가 존재하지 않으면 -> (열여선안되겠다) 판단하고, show는하지말고, 다시 살려두기만**
+    - 다시 살려둬야, 닫히는 동작없는 열리는 동작에선 바로 show를 할 것이다.
+2. 이 때, 더이상 **`.show`를 닫히는 조건을 동시에 주면 안된다..**
+    - 열리는 것(느림) 동`작 따로 `-> 닫히는 `동작 따로`(빠름.but 다른 동작 ex> submit or 취소)가 구분되어있었지만
+    - **이제부터는 열림과 동시에 닫아야하는데, 동시작동할 땐, .show가 안붙은 상황에서는 닫기(dispose)를 해야하기 때문이다.**
+3. **즉, 닫아야하는 `noContent trigger`가 들어왔을 때,**
+    - **이전 동작에서 이미 show(느림)을 미리 해놓았다면 ex> 모달열어서 submit/cancel 대기 -> `.show` 확인 후, `modal.hide()`만**
+    - **이전 동작에서 show하는게 아니라, 열림과 동시에 닫힘해야한다면, ex> 로그인필요하여 안열여야함. -> 동시 동작에서는 열리는게 느려 `.show가 없음`을 확인 후 `modal.dispose()`로 열리는것 미리 막기**
+
+    ```js
+    const modalElement = document.getElementById('modal');
+    let modal = new bootstrap.Modal(modalElement);
+   
+    htmx.on("noContent", (evt) => {
+        // 초기화 / show에서 이미 modal객체를 생성해놨는데, 혹시나 오류에 의해 객체가 없을 수 있으니
+        // 없으면 생성해서 modal객체 무조건 획득은 상태
+        modal = bootstrap.Modal.getOrCreateInstance(modalElement)
+        
+        if (modalElement.classList.contains("show")) {
+            // 1) 열림(느리지만 이전) -> 닫힘(빠름)이 구분동작여서 이미 열려있다면
+            //  -> 닫기만
+            modal.hide();
+        } else {
+            // 2) 열림->닫힘 동시동작인데, 느린 열람 때문에, 닫기에서 미리 못열리게 hide대신 dispose로 안열리게, modal객체 소멸시키기
+            //    -> 열려고 할 때, modal객체가 dispose로 죽어있으면, 살리기만 하고 끝나서 안열린다.
+            modal.dispose();
+        }
+    ```
+    ```js
+    htmx.on('htmx:afterSwap', function (evt) {
+        if (evt.detail.target.id === 'dialog') {
+                modal = bootstrap.Modal.getInstance(modalElement)
+                if (modal) {
+                    // 1) 열림과 동시에 닫힘이 아니라면, dipose안되어있으니, 열기만
+                    modal.show();
+                } else {
+                    // 2) 열림과 동시에 닫혀야해서, 먼저 일어나는 닫기에서 hide대신 dispose로 막나왔으면
+                    // -> 다음 열림을 위해 modal객체 생성만 해두기
+                    modal = new bootstrap.Modal(modalElement);
+                }
+            }
+    ```

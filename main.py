@@ -332,7 +332,6 @@ async def index(request: Request, response_class=HTMLResponse):
 
 
 @app.get("/test", )
-@login_required
 async def test(
         request: Request,
         # response: Response,
@@ -1257,6 +1256,7 @@ async def pic_new_post(
                   )
 
 @app.get("/picstargram/posts/{post_id}/image", response_class=HTMLResponse)
+@login_required
 async def pic_hx_show_post_image(
         request: Request,
         post_id: int,
@@ -1614,11 +1614,10 @@ async def pic_logout_user(
 # comments
 
 @app.get("/picstargram/post/{post_id}/comments", response_class=HTMLResponse)
-# async def pic_show_comments(
+@login_required
 async def pic_hx_show_comments(
         request: Request,
         post_id: int,
-        hx_request: Optional[str] = Header(None),
 ):
     post = get_post(post_id, with_user=True)
 
