@@ -358,7 +358,7 @@ def get_comments(post_id: int, with_user: bool = False):
     post = get_post(post_id)
     if not post:
         return []
-
+    
     # one을 eagerload할 경우, get_comment(,with_user=)를 이용하여 early return
     # -> 아닐 경우, list compt fk조건으로 데이터 반환
     if with_user:
@@ -383,16 +383,20 @@ def get_comments_by_post_author(post_id: int):
 
 
 
-def create_comment(comment_schema: CommentSchema):
-    # new) many생성시 one존재여부 검사 필수 -> 없으면 404 에러
-    user = get_user(comment_schema.user_id)
+def create_comment(data: dict):
+    # many생성시 one존재여부 검사 필수 -> 없으면 404 에러
+    user_id = data.get('user_id')
+    user = get_user(user_id)
     if not user:
-        raise Exception(f"해당 user(id={comment_schema.user_id})가 존재하지 않습니다.")
-    post = get_post(comment_schema.post_id)
+        raise Exception(f"해당 user(id={user_id})가 존재하지 않습니다.")
+
+    post_id = data.get('post_id')
+    post = get_post(post_id)
     if not post:
-        raise Exception(f"해당 post(id={comment_schema.post_id})가 존재하지 않습니다.")
+        raise Exception(f"해당 post(id={post_id})가 존재하지 않습니다.")
 
     try:
+        comment_schema = CommentSchema(**data)
         # id + created_at, updated_at 부여
         comment_schema.id = find_max_id(comments) + 1
         comment_schema.created_at = comment_schema.updated_at = datetime.datetime.now()
@@ -403,6 +407,7 @@ def create_comment(comment_schema: CommentSchema):
         raise e
 
     return comment_schema
+
 
 
 def update_comment(comment_id: int, comment_schema: CommentSchema):
@@ -420,7 +425,7 @@ def update_comment(comment_id: int, comment_schema: CommentSchema):
 
     # TODO: update Schema가 개발되면 model(**user_schema.model_dump())로 대체
     # -> 지금은 업데이트 허용 필드를 직접 할당함.
-    comment.text = comment_schema.text
+    comment.content = comment_schema.content
     comment.updated_at = datetime.datetime.now()
 
     return comment
@@ -432,7 +437,7 @@ def delete_comment(comment_id: int):
         raise Exception(f"해당 comment(id={comment_id})가 존재하지 않습니다.")
 
     global comments
-    comments = [comment for comment in comments if comment.post_id != comment_id]
+    comments = [comment for comment in comments if comment.id != comment_id]
 
 
 def get_like(like_id: int, with_user: bool = False):
@@ -678,3 +683,5 @@ def create_image_info(data: dict):
 
     except Exception as e:
         raise e
+
+

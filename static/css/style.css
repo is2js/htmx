@@ -324,19 +324,25 @@ body {
     gap: 4.5rem !important;
 }
 
-.btn-post {
-    background-color: transparent;
-    border: 0;
-    color: #c4dffd;
 
+
+.btn-post {
+    background-color: transparent !important;
+    border:0;
+    color: #000000;
     font-weight: 600;
+    box-shadow: none !important;
 }
 
+.btn-post[disabled]
+{
+    background-color: transparent;
+    color: #b3b3b7;
+}
 .btn-post:focus,
-.btn-post:hover {
-    background-color: transparent !important;
-    color: #0056b3;
-    box-shadow: none !important;
+.btn-post:hover
+{
+    color: #395ac0;
 }
 
 .fs-6 {

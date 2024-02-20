@@ -4,41 +4,45 @@
         {#<h1 class="modal-title fs-5 fw-bold mx-auto" id="modalLabel">
             댓글 전체보기
         </h1>#}
-        <button type="button" class="btn-close position-absolute end-0 me-2" data-bs-dismiss="modal"
+        <button type="button" class="btn-close position-absolute end-0 me-2 bg-white" data-bs-dismiss="modal"
                 aria-label="Close"></button>
     </div>
     <!-- body -->
-    <div class="modal-body">
-
+    <div class="modal-body pt-0">
         <div class="container">
-            {# 글 내용 #}
-            <div class="comment d-flex">
-                <div class="d-inline me-2">
-                    <a href="{{ url_for('pic_users') }}">
-                        {% set avatar_url = post.user.profile_url if post.user.profile_url else url_for('static', path='images/default-user.png') %}
-                        <img src="{{ avatar_url }}"
-                             class="profile"
-                             alt="{{ post.user.username }}"/>
-                    </a>
-                </div>
-                <div class="d-flex flex-column w-100">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <div class="name">{{ post.user.username }}</div>
-                            <div class="comment">{{ post.content }}</div>
+            <div class="position-sticky top-0 bg-white">
+                {# 글 내용 #}
+                <div class="comment d-flex">
+                    <div class="d-inline me-2">
+                        <a href="{{ url_for('pic_users') }}">
+                            {% set avatar_url = post.user.profile_url if post.user.profile_url else url_for('static', path='images/default-user.png') %}
+                            <img src="{{ avatar_url }}"
+                                 class="profile"
+                                 alt="{{ post.user.username }}"/>
+                        </a>
+                    </div>
+                    <div class="d-flex flex-column w-100">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="name">{{ post.user.username }}</div>
+                                <div class="comment">{{ post.content }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {# 댓글 작성 폼 #}
+                {% include 'picstargram/post/partials/comment_create_form.html' %}
             </div>
 
-            {# 댓글 작성 폼 #}
-            {% include 'picstargram/post/partials/comment_create_form.html' %}
 
             {# 전체 댓글 #}
-            <div class="comments ps-1">
-                {% for comment in comments %}
-                    {% include 'picstargram/post/partials/comment_div.html' %}
-                {% endfor %}
+            <div class="comments ps-1"
+                 hx-trigger="commentsChanged from:body"
+                 hx-get="{{ url_for('pic_hx_show_comments', post_id=post.id) }}"
+                 hx-target="this"
+            >
+                {% include 'picstargram/post/partials/comments.html' %}
             </div>
         </div>
     </div>

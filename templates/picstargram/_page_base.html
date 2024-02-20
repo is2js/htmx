@@ -67,6 +67,12 @@
                     transition: opacity .5s ease-out;
                 }
             </style>
+            <!-- Alpine js -->
+            <script
+                    src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+                    defer
+            ></script>
+
             <!-- Dropzone -->
             <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
             <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css"/>
@@ -105,7 +111,10 @@
 
 
     <!-- Modal -->
-    <div class="modal modal-blur fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    {# data-bs-dackdrop="static"으로 배경누를시 안꺼짐. x버튼으로 꺼야함. #}
+    <div class="modal modal-blur fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true"
+    >
+
         {# 여기서 hx요청없이 hx-target="this"는 submit시 발생하는 204 evt(swap)시에 beforeSwap에 잡히도록 걸어주는 것으로
            -> evt.detail.target.id가 "diaglog"까지 확인하여 modal.hide()시키기 위해. evt에 잡히도록 거는 것 #}
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
@@ -116,7 +125,8 @@
     </div>
 
     <!-- Media Modal(max-width: max-content) -->
-    <div class="modal modal-blur fade bg-dark" id="mediaModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal modal-blur fade bg-dark" id="mediaModal" tabindex="-1" aria-labelledby="modalLabel"
+         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
              id="mediaDialog" hx-target="this" style="max-width: max-content!important;"
         >

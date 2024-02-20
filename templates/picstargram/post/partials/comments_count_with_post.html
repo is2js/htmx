@@ -1,0 +1,21 @@
+{#<span class="badge bg-light text-dark rounded-pill"
+      hx-swap-oob="outerHTML"
+      id="commentscount_{{ post.id }}"
+>
+    {{ comments_count }}
+</span>#}
+
+{# target="this"가 빠지면 outerHTML 있어도 에러난다! 필수! #}
+{#id="commentscount_{{ post.id }}"#}
+
+<span hx-trigger="commentsCountChanged-{{ post.id }} from:body"
+      hx-get="{{ url_for('pic_hx_show_comments_count', post_id=post.id) }}"
+      hx-target="this"
+      hx-swap="outerHTML"
+> 댓글
+    {% if comments_count > 0 %}
+        보기 <span class="badge bg-light text-dark rounded-pill">{{ comments_count }}</span>
+    {% else %}
+        달기
+    {% endif %}
+</span>

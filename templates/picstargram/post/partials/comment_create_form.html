@@ -1,12 +1,24 @@
-<div class="position-relative add-comment pb-2">
-    <form class="">
+<div x-data="{ content: '' }" class="position-relative add-comment pb-2">
+    <form hx-post="{{ url_for('pic_new_comment', post_id=post.id) }}"
+          _="on htmx:afterRequest reset() me"
+          hx-trigger="submit, keyup[enterkey]"
+          hx-swap="none"
+          autocomplete="off"
+    >
         <input type="text"
                class="form-control w-100 px-2 d-inline"
                style="box-shadow: none;border-color: #ced4da;"
                placeholder="댓글 달기..."
+               name="content"
+
+               x-model="content"
+               x-on:input.debounce.300ms="content = $event.target.value"
+
+               autofocus
         >
         <button class="btn btn-sm position-absolute end-0 top-0 bottom-0
-                                btn-primary btn-post text-uppercase"
+                       btn-dark btn-post text-uppercase"
+                :disabled="!content"
         >
             post
         </button>

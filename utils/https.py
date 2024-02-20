@@ -33,7 +33,7 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
 
     # template render + oob도 아니면, 일반Response + 204로
     html_str = ""
-    if template_name:
+    if template_name:        
         t = templates.get_template(template_name)
         html_str += t.render(ctx)
 
@@ -49,6 +49,9 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
     #         oob_html_str += ('\n' if oob_html_str else '') + render_oob(t_name, **t_context)
     if oobs:
         for t_name in oobs:
+                print(f"ctx  >> {ctx}")
+
+
                 oob_html_str += ('\n' if oob_html_str else '') + render_oob(t_name, **ctx)
 
     # oob까지 없어야 실제 204 No Content -> swap 발생 안됨.
@@ -60,11 +63,15 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
         response = HTMLResponse(total_html_str, status_code=status_code)
 
     hx_trigger: dict = convert_hx_trigger_to_dict(hx_trigger)
-    
-    if not html_str:
+
+    # 모달을 안닫기 위한 noContent=False가 아닌지 확인하기
+    no_content_false = hx_trigger.get('noContent', None) is False
+
+    if not html_str and not no_content_false:
         hx_trigger['noContent'] = True
-        # ...
+
     response.headers['HX-Trigger'] = json.dumps(hx_trigger)
+        
 
     # 기본 darkmode 및 cookie관련
     response.set_cookie(key='darkmode', value=str(1))
@@ -101,6 +108,7 @@ def convert_hx_trigger_to_dict(hx_trigger):
     # 1) trigger가 없는 경우, 빈 dict를 만들어서, noContent일 때 삽입되도록 한다.
     else:
         hx_trigger = {}
+
     return hx_trigger
 
 

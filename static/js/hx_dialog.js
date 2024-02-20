@@ -1,5 +1,8 @@
 const modalElement = document.getElementById('modal');
-let modal = new bootstrap.Modal(modalElement);
+let modal = new bootstrap.Modal(modalElement, {
+    backdrop: 'static', // backdrop: 'static' => backdrop click시 닫히지 않음
+    keyboard: true, // keyboard: false => esc키로 닫히지 않음
+});
 
 const mediaModalElement = document.getElementById('mediaModal');
 let mediaModal = new bootstrap.Modal(mediaModalElement);
@@ -59,6 +62,11 @@ let mediaModal = new bootstrap.Modal(mediaModalElement);
 
 
     htmx.on("noContent", (evt) => {
+        // 모달 안꺼지도록 hx-swap="none"외 hx-trigger noContent=False를 줬다면, value를 확인해서 작동안하도록 한다.
+        if (!evt.detail.value) {
+            return;
+        }
+
         // 초기화 / show에서 이미 modal객체를 생성해놨는데, 혹시나 오류에 의해 객체가 없을 수 있으니
         // 없으면 생성해서 modal객체 무조건 획득은 상태
         modal = bootstrap.Modal.getOrCreateInstance(modalElement)

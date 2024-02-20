@@ -229,13 +229,25 @@ class UserEditReq(BaseModel):
 
 class CommentSchema(BaseModel):
     id: Optional[int] = None
-    text: str
-    created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
-    updated_at: Optional[datetime.datetime]
+    content: str
+    created_at: Optional[datetime.datetime] = None # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    updated_at: Optional[datetime.datetime] = None
     user_id: int
     post_id: int
 
     user: Optional['UserSchema'] = None
+
+
+class CommentCreateReq(BaseModel):
+    content: str
+
+    @classmethod
+    def as_form(
+            cls,
+            content: str = Form(...),
+    ):
+
+        return cls(content=content)
 
 
 class PostSchema(BaseModel):
@@ -282,9 +294,6 @@ class PostCreateReq(BaseModel):
         # obj array [string] to dict list [python]
         if tags:
             tags = json.loads(tags)
-
-        print(f"tags  >> {tags}")
-
 
         return cls(content=content, tags=tags,
 

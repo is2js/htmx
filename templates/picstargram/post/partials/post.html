@@ -41,7 +41,7 @@
                              src="{{ post.thumbnail_url }}"
                         >
                     </a>
-                {# max_size가 thumbnail 경우 #}
+                    {# max_size가 thumbnail 경우 #}
                 {% else %}
                     <img class="w-100 img-fluid rounded-3" alt="content"
                          src="{{ post.thumbnail_url }}"
@@ -82,26 +82,31 @@
                 <strong class="d-inline">{{ post.user.username }}</strong>
                 <p class="d-inline">{{ post.content }}</p>
             </div>
-            {% if comments_count > 0 %}
-                <button class="btn p-0">
-                    {#<a href="{{ url_for('pic_show_comments', post_id= post.id )  }}"#}
-                    <a hx-get="{{ url_for('pic_hx_show_comments', post_id= post.id ) }}"
-                       hx-target="#dialog"
-                       hx-swap="innerHTML"
-                       class="text-decoration-none text-muted fs-6">
-                        댓글 {{ comments_count }}개 전체 보기
-                    </a>
-                </button>
-            {% endif %}
+
+            <button class="btn p-0">
+                <a hx-get="{{ url_for('pic_hx_show_post_details', post_id= post.id ) }}"
+                   hx-target="#dialog"
+                   hx-swap="innerHTML"
+                   class="text-decoration-none text-muted fs-6"
+                >
+
+                        {# hx-swap-oob가 동적인 id에 달리면 작동안한다 -> 순회안에서 oob는 include안하고 직접 oob없이 id만 넣고 생성#}
+                        {#<span class="badge bg-light text-dark rounded-pill"
+                              id="commentscount_{{ post.id }}"
+                                                >
+                            {{ comments_count }}
+                        </span>#}
+
+
+                        {% include 'picstargram/post/partials/comments_count_with_post.html' %}
+
+
+                </a>
+            </button>
         </div>
 
-        {# 댓글 최대 2개만 #}
-        {#        {% if comments_count > 0 %}#}
-        {#            {% include 'picstargram/post/partials/comments_div.html' %}#}
-        {#        {% endif %}#}
-
         {# 댓글 추가 form #}
-        {% include 'picstargram/post/partials/comment_create_form.html' %}
+        {#{% include 'picstargram/post/partials/comment_create_form.html' %}#}
 
     </article>
 </div>

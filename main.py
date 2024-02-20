@@ -29,7 +29,8 @@ from enums.messages import Message, MessageLevel
 from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
-    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq, ImageInfoSchema
+    UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq, ImageInfoSchema, \
+    CommentCreateReq
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
@@ -871,10 +872,10 @@ async def pic_update_post(
             request,
             template_name="picstargram/post/partials/post.html",
             context=context,
-            # messages=[Message.UPDATE.write("post")],
-            oobs=[
-                ('picstargram/_toasts.html', dict(messages=[Message.UPDATE.write("post")])),
-            ]
+            messages=[Message.UPDATE.write("post")],
+            # oobs=[
+            #     ('picstargram/_toasts.html', dict(messages=[Message.UPDATE.write("post")])),
+            # ]
         )
 
     return post
@@ -1255,6 +1256,7 @@ async def pic_new_post(
                   messages=[Message.CREATE.write("포스트", level=MessageLevel.INFO)]
                   )
 
+
 @app.get("/picstargram/posts/{post_id}/image", response_class=HTMLResponse)
 @login_required
 async def pic_hx_show_post_image(
@@ -1264,7 +1266,6 @@ async def pic_hx_show_post_image(
     post = get_post(post_id)
 
     image_info: ImageInfoSchema = post.image_info
-
 
     context = dict(
         image_info=image_info.model_dump(),
@@ -1308,7 +1309,6 @@ async def pic_image_download(
         download_file_name: Union[str, None] = None,
         download_file_extension: Union[str, None] = 'png',
 ):
-
     try:
         buffer: bytes = await s3_download(s3_key)
     except Exception as e:
@@ -1331,6 +1331,7 @@ async def pic_image_download(
             'Content-Type': 'application/octet-stream',
         }
     )
+
 
 @app.get("/picstargram/me/", response_class=HTMLResponse)
 @login_required
@@ -1406,7 +1407,7 @@ async def pic_uploader(
     # image_group_name = data['image_group_name']
     # for db -> download시 활용
     image_file_name = data['image_file_name']
-    image_file_name = image_file_name.rsplit('.', 1)[0] # 최대 2개까지 .을 떼어낸 뒤, 맨 첫번째것만
+    image_file_name = image_file_name.rsplit('.', 1)[0]  # 최대 2개까지 .을 떼어낸 뒤, 맨 첫번째것만
     # 확장자 있으면 빼주기
     image_bytes = data['image_bytes']
 
@@ -1613,9 +1614,9 @@ async def pic_logout_user(
 
 # comments
 
-@app.get("/picstargram/post/{post_id}/comments", response_class=HTMLResponse)
+@app.get("/picstargram/post/{post_id}/details", response_class=HTMLResponse)
 @login_required
-async def pic_hx_show_comments(
+async def pic_hx_show_post_details(
         request: Request,
         post_id: int,
 ):
@@ -1623,10 +1624,109 @@ async def pic_hx_show_comments(
 
     comments = get_comments(post_id, with_user=True)
 
+    comments = list(reversed(comments))
+
     context = {
         'request': request,
         'post': post,
         'comments': comments,
     }
-    # return render(request, "picstargram/post/comments.html", context=context)
+
     return render(request, "picstargram/post/partials/comments_modal_content.html", context=context)
+
+
+@app.post("/picstargram/posts/{post_id}/comments/new", response_class=HTMLResponse)
+@login_required
+async def pic_new_comment(
+        request: Request,
+        post_id: int,
+        comment_create_req=Depends(CommentCreateReq.as_form),
+):
+    try:
+        # 1) form데이터는 crud하기 전에 dict로 만들어야한다.
+        data = comment_create_req.model_dump()
+
+        data['post_id'] = post_id
+        data['user_id'] = request.state.user.id
+        # post_id = get_post(data['post_id'])
+
+        comment = create_comment(data)
+
+
+    except Exception as e:
+        raise BadRequestException(f'Comment 생성에 실패함.: {str(e)}')
+
+    return render(request, "",
+                  hx_trigger={
+                      'noContent': False, 'commentsChanged': True, f'commentsCountChanged-{post_id}': True,
+                  },
+                  messages=[Message.CREATE.write("댓글", level=MessageLevel.INFO)],
+                  )
+
+
+@app.get("/picstargram/posts/{post_id}/comments", response_class=HTMLResponse)
+async def pic_hx_show_comments(
+        request: Request,
+        post_id: int,
+        hx_request: Optional[str] = Header(None),
+):
+    comments = get_comments(post_id, with_user=True)
+    comments = list(reversed(comments))
+
+    context = {
+        'request': request,
+        'comments': comments,
+    }
+
+    return render(request,
+                  "picstargram/post/partials/comments.html",
+                  context=context,
+                  )
+
+@app.get("/picstargram/posts/{post_id}/comments-count", response_class=HTMLResponse)
+async def pic_hx_show_comments_count(
+        request: Request,
+        post_id: int,
+        hx_request: Optional[str] = Header(None),
+):
+    post = get_post(post_id, with_user=True)
+    comments = get_comments(post_id, with_user=True)
+    comments_count = len(comments)
+
+    context = {
+        'request': request,
+        'post': post,
+        'comments_count': comments_count,
+    }
+
+    return render(request,
+                  "picstargram/post/partials/comments_count_with_post.html",
+                  context=context,
+                  )
+
+
+@app.post("/comments/{comment_id}", response_class=HTMLResponse)
+@login_required
+async def pic_hx_delete_comment(
+        request: Request,
+        comment_id: int,
+):
+    
+    # post가 필요없을 줄 알았는데, 어느 특정post의 댓글갯수를 update해야할지 trigger 시켜줘야한다
+    comment = get_comment(comment_id)
+    post_id = comment.post_id
+    
+    try:
+        delete_comment(comment_id)
+    except Exception as e:
+        raise BadRequestException(f'Comment(id={comment_id})삭제에 실패했습니다.')
+    
+    
+    # post삭제와 달리, modal에서 CRUD이므로, noContent가 발생하니, noContent=False로 modal안닫히게?
+    return render(request,
+                  "",
+                  hx_trigger={
+                      'noContent': False, 'commentsChanged': True, f'commentsCountChanged-{post_id}': True,
+                  },
+                  messages=[Message.DELETE.write("댓글", level=MessageLevel.INFO)],
+                  )
