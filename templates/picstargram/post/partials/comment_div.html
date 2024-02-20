@@ -14,7 +14,9 @@
                 <div class="comment">{{ comment.content }}</div>
             </div>
             <div class="pt-2 fs-7">
-                <a href="#" class="text-decoration-none text-muted">
+                <a href="#" class="text-decoration-none text-muted"
+                   style="cursor: pointer;"
+                >
                     <i class="bi bi-heart"></i>
                 </a>
             </div>
@@ -32,10 +34,64 @@
                    hx-confirm="정말 삭제하시겠습니까?"
                    hx-swap="none"
                    style="cursor: pointer;"
-                    >
+                >
                     <i class="bi bi-trash3-fill"></i>
                 </a>
             {% endif %}
         </div>
     </div>
+</div>
+
+{# reply #}
+<div class="d-flex mt-1 mb-2 ps-3">
+    {# 답글 내용 #}
+    <div class="d-flex justify-content-between align-items-end py-1 w-100">
+
+        {# 답글 정보 = 사진/ 닉넴|body #}
+        <div class="d-flex fs-7">
+            {# 사진 #}
+            <a href="#">
+                <img class="object-fit-cover rounded-circle me-3" style="width: 25px; height: 25px;"
+                     src="{{ url_for('static', path='images/default-user.png') }}" alt=""
+                >
+            </a>
+            {# 닉네임 | 내용 #}
+            <div class="row me-1">
+                <div class="col-auto bg-dark bg-opacity-10 rounded-2 px-1">
+                    <a class="d-block text-decoration-none text-dark" href="#">
+                        <span class="fw-bold"> 닉네임 </span>
+                    </a>
+                    <div > 답글 내용입니다.zzzzzzzzzzzzzzzzzzzzzzzzㅁㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄹㄴㅁㅇzz</div>
+                </div>
+            </div>
+        </div>
+
+        {# 답글 좋아요/삭제 #}
+        <div class="d-flex align-items-center gap-2 fs-7">
+            {# 좋아요 = 아이콘 + 좋아요갯수 / 좋아요버튼 #}
+            <div class="d-flex align-items-center gap-1">
+                <a href="#" class="text-decoration-none text-muted"
+                   style="cursor: pointer;"
+                >
+                    <i class="bi bi-heart"></i>
+                </a>
+                <span> 4 </span>
+            </div>
+            <a href="#" class="text-decoration-none text-nowrap text-muted"
+               style="cursor: pointer;"
+            >
+                좋아요
+            </a>
+
+            {# 삭제 #}
+            <a href="#" class="text-decoration-none text-muted"
+               style="cursor: pointer;"
+            >
+                <i class="bi bi-trash3-fill"></i>
+            </a>
+        </div>
+
+    </div>
+
+    {# 답글 생성 form #}
 </div>
