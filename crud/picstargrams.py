@@ -2,12 +2,14 @@
 import datetime
 
 from schemas.picstargrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema, PostTagSchema, \
-    ImageInfoSchema
+    ImageInfoSchema, ReplySchema
 from utils.auth import hash_password
 
 users, comments, posts, likes, tags, post_tags = [], [], [], [], [], []
 # 이미지
 image_infos = []
+# 답글
+replies = []
 
 
 def find_max_id(model_list):
@@ -174,7 +176,6 @@ def delete_user(user_id: int):
     # Delete associated image_infos
     # TODO: s3삭제로직도 미리삭제하도록 추가해야함.
     image_infos = [image_info for image_info in image_infos if image_info.user_id != user_id]
-
 
 
 # def get_post(post_id: int, with_user: bool = True, with_comments: bool = False, with_comment_user: bool = False):
@@ -358,7 +359,7 @@ def get_comments(post_id: int, with_user: bool = False):
     post = get_post(post_id)
     if not post:
         return []
-    
+
     # one을 eagerload할 경우, get_comment(,with_user=)를 이용하여 early return
     # -> 아닐 경우, list compt fk조건으로 데이터 반환
     if with_user:
@@ -380,7 +381,6 @@ def get_comments_by_post_author(post_id: int):
         get_comment(comment.id, with_user=True) for comment in comments
         if comment.post_id == post.id and comment.user_id == author.id
     ]
-
 
 
 def create_comment(data: dict):
@@ -407,7 +407,6 @@ def create_comment(data: dict):
         raise e
 
     return comment_schema
-
 
 
 def update_comment(comment_id: int, comment_schema: CommentSchema):
@@ -685,3 +684,68 @@ def create_image_info(data: dict):
         raise e
 
 
+def get_reply(reply_id: int, with_user: bool = False):
+    reply = next((reply for reply in replies if reply.id == reply_id), None)
+    if not reply:
+        return None
+
+    if with_user:
+        user = get_user(reply.user_id)
+
+        if not user:
+            return None
+
+        reply.user = user
+
+    return reply
+
+
+def get_replies(comment_id: int, with_user: bool = False):
+    # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
+    comment = get_comment(comment_id)
+    if not comment:
+        return []
+
+    # one을 eagerload할 경우, get_replies(,with_user=)를 이용하여 early return
+    # -> 아닐 경우, list compt fk조건으로 데이터 반환
+    if with_user:
+        return [
+            get_reply(reply.id, with_user=True) for reply in replies if reply.comment_id == comment.id
+        ]
+
+    return [reply for reply in replies if reply.comment_id == comment_id]
+
+
+def create_reply(data: dict):
+    # many생성시 one존재여부 검사 필수 -> 없으면 404 에러
+    user_id = data.get('user_id')
+    user = get_user(user_id)
+    if not user:
+        raise Exception(f"해당 user(id={user_id})가 존재하지 않습니다.")
+
+    comment_id = data.get('comment_id')
+    comment = get_comment(comment_id)
+    if not comment:
+        raise Exception(f"해당 comment(id={comment_id})가 존재하지 않습니다.")
+
+    try:
+        reply_schema = ReplySchema(**data)
+        # id + created_at, updated_at 부여
+        reply_schema.id = find_max_id(replies) + 1
+        reply_schema.created_at = reply_schema.updated_at = datetime.datetime.now()
+
+        replies.append(reply_schema)
+
+    except Exception as e:
+        raise e
+
+    return reply_schema
+
+
+def delete_reply(reply_id: int):
+    reply = get_reply(reply_id)
+    if not reply:
+        raise Exception(f"해당 Reply(id={reply_id})가 존재하지 않습니다.")
+
+    global replies
+    replies = [reply for reply in replies if reply.id != reply_id]

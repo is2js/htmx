@@ -28,7 +28,6 @@ class UserSchema(BaseModel):
 
     image_info: Optional['ImageInfoSchema'] = None
 
-
     def get_token(self):
         "TODO: sqlalchemy User 모델 이관"
         return {
@@ -158,6 +157,7 @@ class UserToken(BaseModel):
 class UploadImageReq(BaseModel):
     image_bytes: bytes
     image_file_name: str
+
     # image_group_name: str
 
     @classmethod
@@ -194,12 +194,11 @@ class ImageInfoSchema(BaseModel):
     uuid: str
     total_file_size: int
 
-    max_size: Union[str, int] # 'thumbnail' or 512 or 1024 or 1920
+    max_size: Union[str, int]  # 'thumbnail' or 512 or 1024 or 1920
     image_url_data: dict
 
-    user_id: int # user에 대한 many
+    user_id: int  # user에 대한 many
     # user: Optional[UserSchema] = None # many to one인데 할일 없어서 생략
-
 
 
 class UserEditReq(BaseModel):
@@ -230,12 +229,16 @@ class UserEditReq(BaseModel):
 class CommentSchema(BaseModel):
     id: Optional[int] = None
     content: str
-    created_at: Optional[datetime.datetime] = None # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    created_at: Optional[datetime.datetime] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
     updated_at: Optional[datetime.datetime] = None
     user_id: int
     post_id: int
 
     user: Optional['UserSchema'] = None
+
+    replies: Optional[List['ReplySchema']] = []
+
+
 
 
 class CommentCreateReq(BaseModel):
@@ -246,7 +249,28 @@ class CommentCreateReq(BaseModel):
             cls,
             content: str = Form(...),
     ):
+        return cls(content=content)
 
+
+class ReplySchema(BaseModel):
+    id: Optional[int] = None
+    content: str
+    created_at: Optional[datetime.datetime] = None
+    updated_at: Optional[datetime.datetime] = None
+    user_id: int
+    comment_id: int
+
+    user: Optional['UserSchema'] = None
+
+
+class ReplyCreateReq(BaseModel):
+    content: str
+
+    @classmethod
+    def as_form(
+            cls,
+            content: str = Form(...),
+    ):
         return cls(content=content)
 
 
@@ -349,7 +373,7 @@ class LikeSchema(BaseModel):
 class TagSchema(BaseModel):
     id: Optional[int] = None
     name: str
-    created_at: Optional[datetime.datetime] = None # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    created_at: Optional[datetime.datetime] = None  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
     updated_at: Optional[datetime.datetime] = None
 
     posts: Optional[List[PostSchema]] = []  # tag.posts 해당 tag에 속한 글들
