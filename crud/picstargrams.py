@@ -194,9 +194,10 @@ def get_post(
         post.user = get_user(post.user_id)
 
     if with_comments:
-        post.comments = [
-            get_comment(comment.id, with_user=True) for comment in comments if comment.post_id == post.id
-        ]
+        # post.comments = [
+        #     get_comment(comment.id, with_user=True) for comment in comments if comment.post_id == post.id
+        # ]
+        post.comments = get_comments(post_id, with_user=True, with_replies=True)
 
     # likes(중간테이블) 구현후, with_likes 추가
     if with_likes:
@@ -228,9 +229,11 @@ def get_posts(
     # many는 순회
     if with_comments:
         for post in posts:
-            post.comments = [
-                get_comment(comment.id, with_user=True) for comment in comments if comment.post_id == post.id
-            ]
+            post.comments = get_comments(post.id, with_user=True, with_replies=True)
+            # post.comments = [
+            #     get_comment(comment.id, with_user=True, with_replies=True) for comment in comments if
+            #     comment.post_id == post.id
+            # ]
 
     # 실질 중간테이블 like를 many로 넣으면 -> 반대편 one(user) list도 many로 써 담기게 된다.
     if with_likes:
@@ -338,7 +341,7 @@ def delete_post(post_id: int):
 
 
 # new) eagerload를 하더라도 순환참조에러 발생할 수 있으니, with_xxx를 붙여서 처리한다.
-def get_comment(comment_id: int, with_user: bool = False):
+def get_comment(comment_id: int, with_user: bool = False, with_replies: bool = True):
     comment = next((comment for comment in comments if comment.id == comment_id), None)
     if not comment:
         return None
@@ -351,20 +354,31 @@ def get_comment(comment_id: int, with_user: bool = False):
 
         comment.user = user
 
+    if with_replies:
+        comment.replies = get_replies(comment_id, with_user=True)
+
     return comment
 
 
-def get_comments(post_id: int, with_user: bool = False):
+def get_comments(post_id: int, with_user: bool = False, with_replies: bool = True):
     # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
     post = get_post(post_id)
     if not post:
         return []
 
-    # one을 eagerload할 경우, get_comment(,with_user=)를 이용하여 early return
-    # -> 아닐 경우, list compt fk조건으로 데이터 반환
-    if with_user:
+    # if with_user:
+    if with_user and not with_replies:
         return [
             get_comment(comment.id, with_user=True) for comment in comments if comment.post_id == post.id
+        ]
+    elif not with_user and with_replies:
+        return [
+            get_comment(comment.id, with_replies=True) for comment in comments if comment.post_id == post.id
+        ]
+    elif with_user and with_replies:
+        return [
+            get_comment(comment.id, with_user=True, with_replies=True) for comment in comments if
+            comment.post_id == post.id
         ]
 
     return [comment for comment in comments if comment.post_id == post_id]
@@ -701,16 +715,18 @@ def get_reply(reply_id: int, with_user: bool = False):
 
 
 def get_replies(comment_id: int, with_user: bool = False):
-    # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
-    comment = get_comment(comment_id)
-    if not comment:
-        return []
+    #### get_복수에서는 부모검사하지말자! 재귀발생하게 됨.
+    # get_comment는, post.comments 만들 때 쓰는데, 여기서도 또 쓴다.
+    # => 앞으로 부모검사는 `조회메서드안에 있으면 주석처리 -> 조회전 외부에서 하자.` 상하위도메인의 순수조회 vs 검사용조회가 중복되어 재귀를 발생시킨다.
+    # comment = get_comment(comment_id)
+    # if not comment:
+    #     return []
 
     # one을 eagerload할 경우, get_replies(,with_user=)를 이용하여 early return
     # -> 아닐 경우, list compt fk조건으로 데이터 반환
     if with_user:
         return [
-            get_reply(reply.id, with_user=True) for reply in replies if reply.comment_id == comment.id
+            get_reply(reply.id, with_user=True) for reply in replies if reply.comment_id == comment_id
         ]
 
     return [reply for reply in replies if reply.comment_id == comment_id]

@@ -1,0 +1,7 @@
+{#{% if replies | length > 0 %}#}
+{% for reply in replies %}
+    {% include 'picstargram/post/partials/reply.html' %}
+{% endfor %}
+{#{% else %}#}
+{#    <p>답글이 없습니다</p>#}
+{#{% endif %}#}

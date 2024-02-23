@@ -10,7 +10,7 @@
     <!-- body -->
     <div class="modal-body pt-0">
         <div class="container">
-            <div class="position-sticky top-0 bg-white">
+            <div class="position-sticky top-0 bg-white" style="z-index: 1061;">
                 {# 글 내용 #}
                 <div class="comment d-flex">
                     <div class="d-inline me-2">
@@ -33,6 +33,8 @@
 
                 {# 댓글 작성 폼 #}
                 {% include 'picstargram/post/partials/comment_create_form.html' %}
+
+
             </div>
 
 

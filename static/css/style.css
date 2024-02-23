@@ -1,3 +1,7 @@
+[x-cloak] {
+    display: none !important;
+}
+
 html :lang(ko) {
     font-family: 'Noto Sans KR', sans-serif;
     word-break: keep-all;
@@ -226,6 +230,16 @@ body {
     padding: 0.375rem 0;
 }
 
+.add-reply {
+    padding-top: 0.25em;
+}
+
+.add-reply .form-control {
+    border: none;
+    padding: 0.375rem 0;
+}
+
+
 .detail .user .user-header {
     display: flex;
     padding: 0.1em;
@@ -325,23 +339,21 @@ body {
 }
 
 
-
 .btn-post {
     background-color: transparent !important;
-    border:0;
+    border: 0;
     color: #000000;
     font-weight: 600;
     box-shadow: none !important;
 }
 
-.btn-post[disabled]
-{
+.btn-post[disabled] {
     background-color: transparent;
     color: #b3b3b7;
 }
+
 .btn-post:focus,
-.btn-post:hover
-{
+.btn-post:hover {
     color: #395ac0;
 }
 
@@ -351,4 +363,19 @@ body {
 
 .fs-7 {
     font-size: .75rem !important;
+}
+
+
+
+/* tailwind css */
+.rotate-90{
+    transform: rotate(90deg);
+}
+
+.rotate-180{
+    transform: rotate(180deg);
+}
+
+.duration-300{
+    transition: all 0.3s ease; /* 지속 시간을 0.3초로 정의 */
 }

@@ -30,7 +30,7 @@ from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
     UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq, ImageInfoSchema, \
-    CommentCreateReq
+    CommentCreateReq, ReplySchema
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
@@ -71,13 +71,14 @@ async def lifespan(app: FastAPI):
 
     # 4) [Picstargram] dict -> pydantic schema model
     # global users, comments, posts
-    users_, comments_, posts_, likes_, tags_, post_tags_ = await init_picstargram_json_to_list_per_pydantic_model()
+    users_, comments_, posts_, likes_, tags_, post_tags_, replies_ = await init_picstargram_json_to_list_per_pydantic_model()
     users.extend(users_)
     comments.extend(comments_)
     posts.extend(posts_)
     likes.extend(likes_)
     tags.extend(tags_)
     post_tags.extend(post_tags_)
+    replies.extend(replies_)
 
     yield
 
@@ -131,15 +132,19 @@ async def init_picstargram_json_to_list_per_pydantic_model():
         # user.posts = [post for post in posts if post.user_id == user.id]
         # user.comments = [comment for comment in comments if comment.user_id == user.id]
 
-    # 다대다 추가
-    likes = [LikeSchema(**like) for like in picstargram.get("likes", [])]
-    tags = [TagSchema(**tag) for tag in picstargram.get("tags", [])]
-    post_tags = [PostTagSchema(**tag) for tag in picstargram.get("post_tags", [])]
+        # 다대다 추가
+        likes = [LikeSchema(**like) for like in picstargram.get("likes", [])]
+        tags = [TagSchema(**tag) for tag in picstargram.get("tags", [])]
+        post_tags = [PostTagSchema(**tag) for tag in picstargram.get("post_tags", [])]
+
+        # 답글 추가
+        replies = [ReplySchema(**reply) for reply in picstargram.get("replies", [])]
+
 
     print(
         f"[Picstargram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, likes-{len(likes)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개"
         f"의 json 데이터, 각 list에 load")
-    return users, comments, posts, likes, tags, post_tags
+    return users, comments, posts, likes, tags, post_tags, replies
 
 
 async def init_emp_dept_dict_to_db(db):

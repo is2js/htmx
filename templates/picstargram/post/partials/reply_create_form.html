@@ -1,0 +1,27 @@
+<div x-data="{ content: '' }" class="position-relative add-reply pb-2">
+    <form hx-post="{{ url_for('pic_new_comment', post_id=1) }}"
+          _="on htmx:afterRequest reset() me"
+          hx-trigger="submit, keyup[enterkey]"
+          hx-swap="none"
+          autocomplete="off"
+    >
+        <input type="text"
+               class="form-control w-100 px-2 d-inline fs-7 bg-dark bg-opacity-10 rounded-2"
+               style="box-shadow: none;"
+               placeholder="답글 달기..."
+               name="content"
+               x-model="content"
+               x-on:input.debounce.300ms="content = $event.target.value"
+               autofocus
+
+        >
+        <button
+                class="btn btn-sm d-inline position-absolute end-0 top-0 bottom-0
+                   btn-dark btn-post text-uppercase fs-7"
+                :disabled="!content"
+                type="submit"
+        >
+            reply
+        </button>
+    </form>
+</div>

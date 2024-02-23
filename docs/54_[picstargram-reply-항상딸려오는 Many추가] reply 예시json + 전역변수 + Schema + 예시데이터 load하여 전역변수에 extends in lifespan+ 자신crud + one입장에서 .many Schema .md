@@ -96,6 +96,29 @@
             return cls(content=content)
     ```
    
+
+4. 예시데이터 load하여 Schema에 담고 -> lifepsan에서 추가해주기
+    ```python
+    # main.py
+    async def init_picstargram_json_to_list_per_pydantic_model():
+    
+        picstargram_path = pathlib.Path() / 'data' / 'picstargram2.json'
+        with open(picstargram_path, 'r', encoding='utf-8') as f:
+    
+            picstargram = json.load(f)
+    
+            # 답글 추가
+            replies = [ReplySchema(**reply) for reply in picstargram.get("replies", [])]
+    
+    
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        #...
+        users_, comments_, posts_, likes_, tags_, post_tags_, replies_ = await init_picstargram_json_to_list_per_pydantic_model()
+        #...
+        replies.extend(replies_)
+    ```
+
 ### crud 생성
 1. get_comment를 참고해서 get_reply 생성
     - `get_단수`는 자신의 id로 찾되,
@@ -118,12 +141,14 @@
     ```
 2. get_replies()로 get_복수 정의하기. 이 때, comment에 딸린 replies들을 찾을 것이기 때문에, comment_id를 받아야한다.
     - **`many의 get_복수`은 `상위도메인one 의id`로 가져오는 경우가 많다. ex> posts/post_id/comments -> get_comments(post_id)**
+    - **이 때, 상위도메인 검사method-get_comment는, comment의 상위도메인 post가 .comments를 만들때 사용되어, post -> get_comments -> `get_comment` -> get_replies -> 내부 `get_comment`로 부모검사**
+    - **앞으로 부모검사는 `조회메서드안에 있으면 주석처리 -> 조회전 외부에서 하자.` 상하위도메인의 순수조회 vs 검사용조회가 중복되어 재귀를 발생시킨다.**
     ```python
     def get_replies(comment_id: int, with_user: bool = False):
         # new) path로 부모가 올 경우, 존재검사 -> CUD가 아니므로, raise 대신 []로 처리
-        comment = get_comment(comment_id)
-        if not comment:
-            return []
+        # comment = get_comment(comment_id)
+        # if not comment:
+        #     return []
     
         # one을 eagerload할 경우, get_replies(,with_user=)를 이용하여 early return
         # -> 아닐 경우, list compt fk조건으로 데이터 반환
@@ -179,7 +204,7 @@
     ```
  
 
-5. **many의 crud가 끝났으면, `one입장에서 .many`를 쓰는지 확인한다.**
+5. **many의 crud가 끝났으면, `one입장에서 .many`를 쓰는지 확인하고, 쓴다면 `Schema`에 추가한다.**
     - **comment.replies를 써서, 순회하며 사용되도록 `comment`위주로 처리될 것이기 때문에 CommentSchema에 many Schema를 추가한다**
     ```python
     class CommentSchema(BaseModel):
@@ -194,7 +219,50 @@
         
         replies: Optional[List['ReplySchema']] = []
     ```
+   
 
+6. **one입장에서 `가져와야하는 .many`는 `oen의 get메서드에 파라미터로 추가`하고, 항상 True로 넣어주자.**
+    - get_comemnts -> get_comment 순으로 추가한다.
+    - with가 여러개일 경우, 그만큼 경우의수를 만든다.
+    ```python
+    def get_comments(post_id: int, with_user: bool = False, with_replies: bool = True):
+        
+        # if with_user:
+        if with_user and not with_replies:
+            return [
+                get_comment(comment.id, with_user=True) for comment in comments if comment.post_id == post.id
+            ]
+        elif not with_user and with_replies:
+            return [
+                get_comment(comment.id, with_replies=True) for comment in comments if comment.post_id == post.id
+            ]
+        elif with_user and with_replies:
+            return [
+                get_comment(comment.id, with_user=True, with_replies=True) for comment in comments if comment.post_id == post.id
+            ]
+        
+        return [comment for comment in comments if comment.post_id == post_id]
+    
+    ```
+    ```python
+    def get_comment(comment_id: int, with_user: bool = False, with_replies:bool=True):
+        comment = next((comment for comment in comments if comment.id == comment_id), None)
+        if not comment:
+            return None
+    
+        if with_user:
+            user = get_user(comment.user_id)
+    
+            if not user:
+                return None
+    
+            comment.user = user
+            
+        if with_replies:
+            comment.replies = get_replies(comment_id, with_user=True)
+    
+        return comment
+    ```
 ### AWS 명령어 모음
 ```shell
 %UserProfile%\.aws\credentials
