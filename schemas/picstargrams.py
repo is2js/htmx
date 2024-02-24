@@ -238,7 +238,9 @@ class CommentSchema(BaseModel):
 
     replies: Optional[List['ReplySchema']] = []
 
-
+    @property
+    def replies_count(self):
+        return len(self.replies)
 
 
 class CommentCreateReq(BaseModel):
@@ -293,6 +295,12 @@ class PostSchema(BaseModel):
     tags: Optional[List['TagSchema']] = []
 
     image_info: Optional['ImageInfoSchema'] = None
+
+    @property
+    def comments_count(self):
+        comments_count = len(self.comments)
+        replies_count = sum(comment.replies_count for comment in self.comments)
+        return comments_count + replies_count
 
 
 class TagCreateReq(BaseModel):

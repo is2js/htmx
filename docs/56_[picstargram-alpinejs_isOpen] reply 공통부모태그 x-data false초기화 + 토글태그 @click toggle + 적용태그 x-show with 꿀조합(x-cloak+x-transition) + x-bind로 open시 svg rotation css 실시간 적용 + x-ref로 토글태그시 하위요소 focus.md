@@ -96,6 +96,19 @@
         ```
     ![14ff2195-7c0d-44aa-a77d-0748a7aadf7f](https://raw.githubusercontent.com/is2js/screenshots/main/14ff2195-7c0d-44aa-a77d-0748a7aadf7f.gif)
 
+5. **include된 html속이지만, 연결되면 alpinejs가 작동하므로, `@click`으로 submit버튼에 false를 넣어줘서, 한번 작성하면 안보이게 하자**
+    - **필요시 해주는데, 여러개 작성할 수도 있고, 직접끄면 되니 놔둔다.**
+    ```html
+    <button
+            class="btn btn-sm d-inline position-absolute end-0 top-0 bottom-0
+               btn-dark btn-post text-uppercase fs-7"
+            :disabled="!content"
+            type="submit"
+            @click="replyAddOpen = false"
+    >
+        reply
+    </button>
+    ```
 
 ### isOpen 토글 태그안에 open시 svg로테이션 시키는 css를 x-bind:class로 적용하기
 1. 토글태그(a)의 text안에 **`.d-inline-block`으로 한줄이지만 & w/h를 가지도록 `div`를 만들어놓고, 회전대비 정사각icon을 수직가운데정렬할 `.my-auto`를 추가한다**
@@ -168,6 +181,34 @@
     ```
     ![8838ff35-8cb9-4556-bbf7-00eae11d6fd5](https://raw.githubusercontent.com/is2js/screenshots/main/8838ff35-8cb9-4556-bbf7-00eae11d6fd5.gif)
 
+### [상위] @click 토글 태그시, [하위] 조작하고 싶은 태그에 x-ref를 적용해서, 상위에서 태그컨트롤 + x-show이후는 $nextTick(())=>)과 함께 사용
+1. 조절하고 싶은 하위 태그에 `x-ref="참조명"`을 기입한다.
+    - **하위의 reply_create_form에 input태그에 focus를 메기고 싶어서, x-ref에 넣고 싶은데, `include내부에서 x-data초기화된 격리된 상황`이다.**
+    - **그렇다면, `조작하고 싶은 태그가 있는 include`의 `부모태그`에 x-ref를 주고, 접근해나간다.**
+    ```html
+    {# 답글 생성 form #}
+    {% if user %}
+        <div x-show="replyAddOpen"
+             x-cloak
+             x-transition:enter.duration.300ms
+             x-transition:leave.duration.150ms
+             x-ref="replyAddFormWrapper"
+        >
+            {% include 'picstargram/post/partials/reply_create_form_with_comment.html' %}
+        </div>
+    {% endif %}
+    ```
+   
+2. 이제 상위 토글태그의 @click에서 토글외 **`토글 이후 x-show에 나타나는 타이밍`을 노리기 위해 `$nextTick(()=> )`에서 코드를 작성한다.**
+    - **x-ref가 x-show에 포함된 한타이밍 뒤에 나타나는 것의 조작이라면 `$nextTick(()=>))`에서 `$ref.참조명`으로 접근한다.**
+    - **해당 x-ref에서 더이상 하위로 접근불가능하므로 `js의 querySelector()`로 찾아가서 `.focus()`한다.**
+    ```html
+    {# 답글창 열기 #}
+    <a class="text-decoration-none text-muted"
+       @click="replyAddOpen = !replyAddOpen; $nextTick(() => $refs.replyAddFormWrapper.querySelector('input').focus());"
+    >
+    ```
+    ![88de53d2-6115-404b-aba0-cc17e9b673b3](https://raw.githubusercontent.com/is2js/screenshots/main/88de53d2-6115-404b-aba0-cc17e9b673b3.gif)
 
 ### AWS 명령어 모음
 ```shell

@@ -41,7 +41,10 @@
 
         {# 삭제 #}
         {% if user and reply.user_id == user.id %}
-            <a href="#" class="text-decoration-none text-muted"
+            <a class="text-decoration-none text-muted"
+               hx-post="{{ url_for('pic_hx_delete_reply', reply_id= reply.id ) }}"
+               hx-confirm="정말 삭제하시겠습니까?"
+               hx-swap="none"
                style="cursor: pointer;"
             >
                 <i class="bi bi-trash3-fill"></i>

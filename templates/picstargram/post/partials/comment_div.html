@@ -29,19 +29,19 @@
                 <span href="#" class="text-muted">좋아요 {{ 123 }}개</span>
                 {# 답글창 열기 #}
                 <a class="text-decoration-none text-muted"
-                   @click="replyAddOpen = !replyAddOpen"
+                   @click="replyAddOpen = !replyAddOpen; $nextTick(() => $refs.replyAddFormWrapper.querySelector('input').focus());"
                 >
                     {# 회전되는 icon #}
-                     <div class="d-inline-block my-auto"
+                    <div class="d-inline-block my-auto"
                          x-bind:class="replyAddOpen && 'rotate-180 duration-300'"
                     >
-{#                        <svg transform="rotate(90)"#}
-{#                             width="9"#}
-{#                             height="9"#}
-{#                             viewBox="0 0 25 25"#}
-{#                        >#}
-{#                            <path d="M24 22h-24l12-20z"/>#}
-{#                        </svg>#}
+                        {#                        <svg transform="rotate(90)"#}
+                        {#                             width="9"#}
+                        {#                             height="9"#}
+                        {#                             viewBox="0 0 25 25"#}
+                        {#                        >#}
+                        {#                            <path d="M24 22h-24l12-20z"/>#}
+                        {#                        </svg>#}
                         <!-- replyAddOpen이 true일 때 -->
                         <template x-if="replyAddOpen">
                             <span>❌</span>
@@ -68,17 +68,24 @@
 
     {# reply #}
     <div class="mt-1 mb-2 ps-3">
+        {# 전체 답글 #}
         {% set replies = comment.replies %}
-        {# 답글들 #}
-        {% include 'picstargram/post/partials/replies.html' %}
+        <div hx-trigger="repliesChanged-{{ comment.id }} from:body"
+             hx-get="{{ url_for('pic_hx_show_replies', comment_id=comment.id) }}"
+             hx-target="this"
+        >
+            {% include 'picstargram/post/partials/replies.html' %}
+        </div>
+
         {# 답글 생성 form #}
         {% if user %}
             <div x-show="replyAddOpen"
                  x-cloak
                  x-transition:enter.duration.300ms
                  x-transition:leave.duration.150ms
+                 x-ref="replyAddFormWrapper"
             >
-                {% include 'picstargram/post/partials/reply_create_form.html' %}
+                {% include 'picstargram/post/partials/reply_create_form_with_comment.html' %}
             </div>
         {% endif %}
     </div>
