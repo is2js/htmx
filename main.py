@@ -30,7 +30,7 @@ from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
     UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq, ImageInfoSchema, \
-    CommentCreateReq, ReplySchema
+    CommentCreateReq, ReplySchema, ReplyCreateReq
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
@@ -49,7 +49,7 @@ from crud.picstargrams import users, posts, comments, get_users, get_user, creat
     update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
     update_tag, delete_tag, get_user_by_username, get_user_by_email, \
     image_infos, create_image_info, get_comments_by_post_author, \
-    replies
+    replies, create_reply, get_replies, get_reply, delete_reply
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -1695,8 +1695,12 @@ async def pic_hx_show_comments_count(
         hx_request: Optional[str] = Header(None),
 ):
     post = get_post(post_id, with_user=True)
-    comments = get_comments(post_id, with_user=True)
+    # comments = get_comments(post_id, with_user=True)
+    comments = get_comments(post_id, with_user=True, with_replies=True)
     comments_count = len(comments)
+
+    replies_count = sum([len(comment.replies) for comment in comments])
+    comments_count += replies_count
 
     context = {
         'request': request,
@@ -1734,4 +1738,81 @@ async def pic_hx_delete_comment(
                       'noContent': False, 'commentsChanged': True, f'commentsCountChanged-{post_id}': True,
                   },
                   messages=[Message.DELETE.write("댓글", level=MessageLevel.INFO)],
+                  )
+
+
+@app.post("/picstargram/comments/{comment_id}/replies/new", response_class=HTMLResponse)
+@login_required
+async def pic_new_reply(
+        request: Request,
+        comment_id: int,
+        reply_create_req=Depends(ReplyCreateReq.as_form),
+):
+    try:
+        # 1) form데이터는 crud하기 전에 dict로 만들어야한다.
+        data = reply_create_req.model_dump()
+
+        data['comment_id'] = comment_id
+        data['user_id'] = request.state.user.id
+
+        reply = create_reply(data)
+
+        # 2) comment갯수변화 trigger를 위해 post_id가 필요
+        comment = get_comment(comment_id)
+        post_id = comment.post_id
+
+    except Exception as e:
+        raise BadRequestException(f'Reply 생성에 실패함.: {str(e)}')
+
+    return render(request, "",
+                  hx_trigger={
+                      'noContent': False,
+                      f'repliesChanged-{comment_id}': True,
+                      f'repliesCountChanged-{comment_id}': True,
+                      f'commentsCountChanged-{post_id}': True, # 답글달시 댓글갯수변화도
+                  },
+                  messages=[Message.CREATE.write("답글", level=MessageLevel.INFO)],
+                  )
+
+
+@app.get("/picstargram/comments/{comment_id}/replies", response_class=HTMLResponse)
+async def pic_hx_show_replies(
+        request: Request,
+        comment_id: int,
+        hx_request: Optional[str] = Header(None),
+):
+    replies = get_replies(comment_id, with_user=True)
+
+    context = {
+        'request': request,
+        'replies': replies,
+    }
+
+    return render(request,
+                  "picstargram/post/partials/replies.html",
+                  context=context,
+                  )
+
+
+@app.post("/replies/{reply_id}", response_class=HTMLResponse)
+@login_required
+async def pic_hx_delete_reply(
+        request: Request,
+        reply_id: int,
+):
+    # post가 필요없을 줄 알았는데, 어느 특정post의 댓글갯수를 update해야할지 trigger 시켜줘야한다
+    reply = get_reply(reply_id)
+    comment_id = reply.comment_id
+
+    try:
+        delete_reply(reply_id)
+    except Exception as e:
+        raise BadRequestException(f'Reply (id={reply_id})삭제에 실패했습니다.')
+
+    return render(request,
+                  "",
+                  hx_trigger={
+                      'noContent': False, f'repliesChanged-{comment_id}': True, f'repliesCountChanged-{comment_id}': True,
+                  },
+                  messages=[Message.DELETE.write("답글", level=MessageLevel.INFO)],
                   )

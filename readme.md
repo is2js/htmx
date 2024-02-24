@@ -31,3 +31,6 @@
 4. **bootstrap `modal과 toast의 부모태그를 지속 재활용`하여 base.html에 1개만 존재하면, 모든 상속 템플릿 html에서 쉽게 호출 가능**
 
     ![64913b77-605f-4e2b-9add-13bb18edbf9a](https://raw.githubusercontent.com/is2js/screenshots/main/64913b77-605f-4e2b-9add-13bb18edbf9a.gif)
+
+5. `alpinejs`를 이용하여 `front에서의 동적인 상태관리`를 통해, `댓글입력창의 활성 + 답글입력창의 활성 및 focus를 조정`한다.
+    ![88de53d2-6115-404b-aba0-cc17e9b673b3](https://raw.githubusercontent.com/is2js/screenshots/main/88de53d2-6115-404b-aba0-cc17e9b673b3.gif)
