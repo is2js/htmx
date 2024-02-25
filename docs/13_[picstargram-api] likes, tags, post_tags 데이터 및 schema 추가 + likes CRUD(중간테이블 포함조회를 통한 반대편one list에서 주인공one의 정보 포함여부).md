@@ -114,7 +114,7 @@
 5. crud> picstragram.py에 db대신 메모리데이터로 쓰일 전역용 메모리 데이터변수 likes, tags = [] 를 선언해준다.
     - main.py의 likespan에서 import 후 json -> Schema list를 여기에 extends해서 초기화한다.
     ```python
-    users, comments, posts, likes, tags, post_tags = [], [], [], [], [], []
+    users, comments, posts, liked_posts, tags, post_tags = [], [], [], [], [], []
     ```
 
 ### Schema

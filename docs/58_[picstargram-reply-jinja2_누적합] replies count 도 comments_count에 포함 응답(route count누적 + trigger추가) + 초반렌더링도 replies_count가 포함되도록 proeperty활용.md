@@ -154,6 +154,19 @@
     {% set comments_count = post.comments_count %}
     ```
 
+3. route에서도 property활용하도록 변경
+    ```python
+    # post = get_post(post_id, with_user=True)
+    # comments = get_comments(post_id, with_user=True)
+    # comments = get_comments(post_id, with_user=True, with_replies=True)
+    # comments_count = len(comments)
+    #
+    # replies_count = sum([len(comment.replies) for comment in comments])
+    # comments_count += replies_count
+    
+    post = get_post(post_id, with_user=True, with_comments=True)
+    comments_count = post.comments_count
+    ```
 ### AWS 명령어 모음
 
 ```shell

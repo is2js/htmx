@@ -34,3 +34,5 @@
 
 5. `alpinejs`를 이용하여 `front에서의 동적인 상태관리`를 통해, `댓글입력창의 활성 + 답글입력창의 활성 및 focus를 조정`한다.
     ![88de53d2-6115-404b-aba0-cc17e9b673b3](https://raw.githubusercontent.com/is2js/screenshots/main/88de53d2-6115-404b-aba0-cc17e9b673b3.gif)
+6. 좋아요버튼과 좋아요갯수 변화는 `hx-swap`과 `hx-swap-oob`를 활용하여, 백엔드에서 동적view를 만들어낸다.
+    ![c7592013-5846-43c8-86d8-e7fa95d617fe](https://raw.githubusercontent.com/is2js/screenshots/main/c7592013-5846-43c8-86d8-e7fa95d617fe.gif)

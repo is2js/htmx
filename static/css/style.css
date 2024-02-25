@@ -379,3 +379,7 @@ body {
 .duration-300{
     transition: all 0.3s ease; /* 지속 시간을 0.3초로 정의 */
 }
+
+.cursor-pointer{
+    cursor: pointer;
+}

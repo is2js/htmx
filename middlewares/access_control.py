@@ -41,7 +41,10 @@ class AccessControl(BaseHTTPMiddleware):
         except Exception as e:
             # 템플릿 오류 -> oob render(status code 200<= <400 + 204제외만 oob swap)
             if isinstance(e, TemplateException):
-                return render(request, "",
+                return render(request,
+                              template_name=e.template_name,
+                              html=e.html,
+                              context=e.context,
                               messages=[Message.FAIL.write('', text=f'{str(e)}', level=MessageLevel.ERROR)],
                               )
             # 그외 오류

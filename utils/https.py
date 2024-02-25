@@ -15,7 +15,7 @@ templates = Jinja2Templates(directory="templates")
 templates.env.filters['feed_time'] = feed_time  # 필터들도 main.py와 다르게 직접 추가해줘야한다.
 
 
-def render(request, template_name="", context: dict = {}, status_code: int = 200,
+def render(request, template_name="", html="", context: dict = {}, status_code: int = 200,
            cookies: dict = None,
            delete_cookies: list = None,
            hx_trigger: dict | str | List[str] = None,
@@ -33,9 +33,14 @@ def render(request, template_name="", context: dict = {}, status_code: int = 200
 
     # template render + oob도 아니면, 일반Response + 204로
     html_str = ""
+    # 2번째 인자로서 템플릿이름이 주어진 경우,
     if template_name:        
         t = templates.get_template(template_name)
         html_str += t.render(ctx)
+
+    # f"{ len(post.likes) }"처럼, innerHTML swap으로서 값만 보냄 -> include용 안뺌. 직접 값 입력의 경우
+    else:
+        html_str += html
 
     # messages 등 oob 처리
     # -> messages는 자주쓰이니 직접 편하게 입력하도록 oob template 경로를 적어서 반영해준다.

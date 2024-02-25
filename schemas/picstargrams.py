@@ -291,7 +291,7 @@ class PostSchema(BaseModel):
 
     comments: Optional[List[CommentSchema]] = []
 
-    likes: Optional[List['LikeSchema']] = []
+    likes: Optional[List['LikedPostSchema']] = []
     tags: Optional[List['TagSchema']] = []
 
     image_info: Optional['ImageInfoSchema'] = None
@@ -372,10 +372,24 @@ class UpdatePostReq(BaseModel):
 class LikeSchema(BaseModel):
     id: Optional[int] = None
     user_id: int
-    post_id: int
-    created_at: Optional[datetime.datetime]  # 서버부여 -> 존재는 해야함 but TODO: DB 개발되면, 예제 안뜨게 CreateSchema 분리하여 제거대상.
+    # post_id: int
+    created_at: Optional[datetime.datetime] = None
 
     user: Optional[UserSchema] = None  # like.user(좋아요 누른사람)
+
+
+class LikedPostSchema(LikeSchema):
+    post_id: int
+
+
+class LikedCommentSchema(LikeSchema):
+    comment_id: int
+    pass
+
+
+class LikedReplySchema(LikeSchema):
+    reply_id: int
+    pass
 
 
 class TagSchema(BaseModel):

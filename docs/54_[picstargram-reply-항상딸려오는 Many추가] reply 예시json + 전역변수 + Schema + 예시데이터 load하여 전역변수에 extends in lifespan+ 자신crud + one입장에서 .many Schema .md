@@ -54,7 +54,7 @@
         ImageInfoSchema
     from utils.auth import hash_password
     
-    users, comments, posts, likes, tags, post_tags = [], [], [], [], [], []
+    users, comments, posts, liked_posts, tags, post_tags = [], [], [], [], [], []
     # 이미지
     image_infos = []
     # 답글
@@ -66,7 +66,7 @@
     tracks_data = []
     from crud.picstargrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
         get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
-        update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
+        update_comment, delete_comment, likes, tags, post_tags, create_like, delete_liked_post, get_tags, get_tag, create_tag, \
         update_tag, delete_tag, get_user_by_username, get_user_by_email, \
         image_infos, create_image_info, get_comments_by_post_author, \
         replies

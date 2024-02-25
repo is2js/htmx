@@ -30,7 +30,7 @@ from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
     UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq, ImageInfoSchema, \
-    CommentCreateReq, ReplySchema, ReplyCreateReq
+    CommentCreateReq, ReplySchema, ReplyCreateReq, LikedPostSchema, LikedCommentSchema, LikedReplySchema
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
@@ -46,7 +46,8 @@ models.Base.metadata.create_all(bind=engine)
 tracks_data = []
 from crud.picstargrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
-    update_comment, delete_comment, likes, tags, post_tags, create_like, delete_like, get_tags, get_tag, create_tag, \
+    update_comment, delete_comment, liked_posts, liked_comments, liked_replies, tags, post_tags, create_liked_post, \
+    delete_liked_post, get_tags, get_tag, create_tag, \
     update_tag, delete_tag, get_user_by_username, get_user_by_email, \
     image_infos, create_image_info, get_comments_by_post_author, \
     replies, create_reply, get_replies, get_reply, delete_reply
@@ -71,14 +72,16 @@ async def lifespan(app: FastAPI):
 
     # 4) [Picstargram] dict -> pydantic schema model
     # global users, comments, posts
-    users_, comments_, posts_, likes_, tags_, post_tags_, replies_ = await init_picstargram_json_to_list_per_pydantic_model()
+    users_, comments_, posts_, tags_, post_tags_, replies_, liked_posts_, liked_comments_, liked_replies_ = await init_picstargram_json_to_list_per_pydantic_model()
     users.extend(users_)
     comments.extend(comments_)
     posts.extend(posts_)
-    likes.extend(likes_)
     tags.extend(tags_)
     post_tags.extend(post_tags_)
     replies.extend(replies_)
+    liked_posts.extend(liked_posts_)
+    liked_comments.extend(liked_comments_)
+    liked_replies.extend(liked_replies_)
 
     yield
 
@@ -98,6 +101,8 @@ async def init_picstargram_json_to_list_per_pydantic_model():
 
     with open(picstargram_path, 'r', encoding='utf-8') as f:
         picstargram = json.load(f)
+        print(f"picstargram  >> {picstargram}")
+
         # 단순 순회하며 처음부터 append하는 것은 list comp로 처리한다.
         # + list를 기대하고 dict를 꺼낼 땐 get(, [])로 처리하면 된다.
 
@@ -133,18 +138,20 @@ async def init_picstargram_json_to_list_per_pydantic_model():
         # user.comments = [comment for comment in comments if comment.user_id == user.id]
 
         # 다대다 추가
-        likes = [LikeSchema(**like) for like in picstargram.get("likes", [])]
         tags = [TagSchema(**tag) for tag in picstargram.get("tags", [])]
         post_tags = [PostTagSchema(**tag) for tag in picstargram.get("post_tags", [])]
 
         # 답글 추가
         replies = [ReplySchema(**reply) for reply in picstargram.get("replies", [])]
 
+        liked_posts = [LikedPostSchema(**like) for like in picstargram.get("likedPosts", [])]
+        liked_comments = [LikedCommentSchema(**like) for like in picstargram.get("likedComments", [])]
+        liked_replies = [LikedReplySchema(**like) for like in picstargram.get("likedReplies", [])]
 
     print(
-        f"[Picstargram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, likes-{len(likes)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개"
+        f"[Picstargram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개, likes-Post{len(liked_posts)} / Comment{len(liked_comments)}/ Reply{len(liked_replies)}개"
         f"의 json 데이터, 각 list에 load")
-    return users, comments, posts, likes, tags, post_tags, replies
+    return users, comments, posts, tags, post_tags, replies, liked_posts, liked_comments, liked_replies
 
 
 async def init_emp_dept_dict_to_db(db):
@@ -1006,11 +1013,11 @@ async def pic_delete_comment(
 @app.post("/like", response_model=Union[LikeSchema, str], status_code=201)
 async def pic_create_like(
         request: Request,
-        like_schema: LikeSchema,
+        liked_post_schema: LikedPostSchema,
         response: Response,
 ):
     try:
-        like = create_like(like_schema)
+        like = create_liked_post(liked_post_schema)
         return like
 
     except Exception as e:
@@ -1018,42 +1025,86 @@ async def pic_create_like(
         return f"like 생성에 실패했습니다.: {e}"
 
 
-# TODO: 나중에 로그인 + db 구현후 path param으로 옮겨주기
-# @app.post("/posts/{post_id}/likes", response_model=Union[LikeSchema, str], status_code=201)
-@app.post("/posts/likes", response_model=Union[LikeSchema, str], status_code=201)
+@app.post("/posts/{post_id}/likes", response_model=Union[LikedPostSchema, str], status_code=201)
 async def pic_create_or_delete_like(
         request: Request,
-        # post_id: int, # TODO: db 구현 후 1) post_id : path param + 2) user_id : request.user...
-        like_schema: LikeSchema,
+        post_id: int,
         response: Response,
 ):
     # 현재 post에서 실질중간테입르 likes를 many로 불러온다. 이 때, 반대편one인 user가 포함되어있어서, 결국엔 user list에 접근가능해진다.
     # -> 현재) 특정 post_id -현재의 나 like_schema.user_id
     # -> TODO: 추후) 특정 post_id(path_param) +  post.likes.add( request.user객체-현재의나 ) -> schema 없어도 됨.
     post = get_post(
-        like_schema.post_id,
+        post_id,
         with_user=True,  # 작성자 <-> 현재의 나 비교
         with_likes=True
     )
 
     # 1) 일단 좋아요 누른사람(like_schema.user_id)이 작성자(post.user.id)면, pass한다.
-    if (author_id := post.user.id) == like_schema.user_id:
+    user_id = request.state.user.id
+    if (author_id := post.user.id) == user_id:
         raise Exception(f"자신(id={author_id})의 post(id={post.id})에는 좋아요를 누를 수 없습니다.")
 
     try:
         # 2) post.likes의 many데이터마다 박혀있는 user들을 list안에  좋아요누른사람의  포함여부(in)를 확인하고
         # -> 포함시 delete / 미포함시 create 작동을 하면 된다.
-        if like_schema.user_id in [like.user.id for like in post.likes]:
-            delete_like(like_schema)
+        if user_id in [like.user.id for like in post.likes]:
+            delete_liked_post(post_id, user_id)
             return f"이미 좋아요를 누른 게시물이어서, 좋아요를 제거합니다."
 
         else:
-            create_like(like_schema)
+            create_liked_post(post_id, user_id)
             return f"현재 게시물에 좋아요를 눌렀습니다."
 
     except Exception as e:
         response.status_code = 400
         return f"좋아요를 누른 것에 실패했습니다.: {e}"
+
+
+@app.post("/posts/{post_id}/like")
+@login_required
+async def pic_hx_like_post(
+        request: Request,
+        post_id: int
+):
+    post = get_post(post_id, with_user=True, with_likes=True)
+    likes = post.likes
+    user_id = request.state.user.id
+
+    # 1) 글작성자 <-> 좋아요누른 유저면, 안된다고 메세지를 준다.
+    if post.user.id == user_id:
+        raise BadRequestException(
+            '작성자는 좋아요를 누를 수 없어요🤣',
+            context=dict(post=post),
+            template_name="picstargram/post/partials/post_likes_button.html"
+            # html=f"{len(post.likes)}"
+        )
+
+    # 2) 현재 post의 likes 중에 내가 좋아요 누른 적이 있는지 검사한다.
+    user_exists_like = next((like for like in likes if like.user_id == user_id), None)
+
+    # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
+    #      => 삭제시, user_id, post_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
+    if user_exists_like:
+        delete_liked_post(user_exists_like)
+        post = get_post(post_id, with_likes=True)
+        return render(request, "picstargram/post/partials/post_likes_button.html",
+                      context=dict(post=post),
+                      messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
+                      oobs=["picstargram/post/partials/post_likes_count.html"]
+                      )
+
+    # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
+    else:
+        data = dict(user_id=user_id, post_id=post_id)
+        like = create_liked_post(data)
+        post = get_post(post_id, with_likes=True)
+        return render(request, "picstargram/post/partials/post_likes_button.html",
+                      context=dict(post=post),
+                      messages=Message.SUCCESS.write('좋아요', text="❤좋아요를 눌렀습니다.❤", level=MessageLevel.SUCCESS),
+                      oobs=["picstargram/post/partials/post_likes_count.html"]
+                      )
+
 
 
 ############
@@ -1640,6 +1691,10 @@ async def pic_hx_show_post_details(
     return render(request, "picstargram/post/partials/comments_modal_content.html", context=context)
 
 
+############
+# picstargram comments
+############
+
 @app.post("/picstargram/posts/{post_id}/comments/new", response_class=HTMLResponse)
 @login_required
 async def pic_new_comment(
@@ -1688,19 +1743,23 @@ async def pic_hx_show_comments(
                   context=context,
                   )
 
+
 @app.get("/picstargram/posts/{post_id}/comments-count", response_class=HTMLResponse)
 async def pic_hx_show_comments_count(
         request: Request,
         post_id: int,
         hx_request: Optional[str] = Header(None),
 ):
-    post = get_post(post_id, with_user=True)
+    # post = get_post(post_id, with_user=True)
     # comments = get_comments(post_id, with_user=True)
-    comments = get_comments(post_id, with_user=True, with_replies=True)
-    comments_count = len(comments)
+    # comments = get_comments(post_id, with_user=True, with_replies=True)
+    # comments_count = len(comments)
+    #
+    # replies_count = sum([len(comment.replies) for comment in comments])
+    # comments_count += replies_count
 
-    replies_count = sum([len(comment.replies) for comment in comments])
-    comments_count += replies_count
+    post = get_post(post_id, with_user=True, with_comments=True)
+    comments_count = post.comments_count
 
     context = {
         'request': request,
@@ -1720,17 +1779,15 @@ async def pic_hx_delete_comment(
         request: Request,
         comment_id: int,
 ):
-    
     # post가 필요없을 줄 알았는데, 어느 특정post의 댓글갯수를 update해야할지 trigger 시켜줘야한다
     comment = get_comment(comment_id)
     post_id = comment.post_id
-    
+
     try:
         delete_comment(comment_id)
     except Exception as e:
         raise BadRequestException(f'Comment(id={comment_id})삭제에 실패했습니다.')
-    
-    
+
     # post삭제와 달리, modal에서 CRUD이므로, noContent가 발생하니, noContent=False로 modal안닫히게?
     return render(request,
                   "",
@@ -1740,6 +1797,10 @@ async def pic_hx_delete_comment(
                   messages=[Message.DELETE.write("댓글", level=MessageLevel.INFO)],
                   )
 
+
+############
+# picstargram replies
+############
 
 @app.post("/picstargram/comments/{comment_id}/replies/new", response_class=HTMLResponse)
 @login_required
@@ -1769,7 +1830,7 @@ async def pic_new_reply(
                       'noContent': False,
                       f'repliesChanged-{comment_id}': True,
                       f'repliesCountChanged-{comment_id}': True,
-                      f'commentsCountChanged-{post_id}': True, # 답글달시 댓글갯수변화도
+                      f'commentsCountChanged-{post_id}': True,  # 답글달시 댓글갯수변화도
                   },
                   messages=[Message.CREATE.write("답글", level=MessageLevel.INFO)],
                   )
@@ -1812,7 +1873,8 @@ async def pic_hx_delete_reply(
     return render(request,
                   "",
                   hx_trigger={
-                      'noContent': False, f'repliesChanged-{comment_id}': True, f'repliesCountChanged-{comment_id}': True,
+                      'noContent': False, f'repliesChanged-{comment_id}': True,
+                      f'repliesCountChanged-{comment_id}': True,
                   },
                   messages=[Message.DELETE.write("답글", level=MessageLevel.INFO)],
                   )

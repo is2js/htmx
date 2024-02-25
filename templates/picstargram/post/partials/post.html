@@ -49,7 +49,6 @@
                 {% endif %}
             {% endif %}
             {# 추가 텍스트 post.content + tag #}
-            {#<p class="fs-5 fw-bold mt-3 mb-10 px-4">{{ post.content }}</p>#}
             <div class="d-flex align-items-center gap-2 text-sm my-3 flex-wrap">
                 {% for tag in post.tags %}
                     <a href="{{ url_for('pic_get_tag', tag_id=tag.id) }} "
@@ -63,7 +62,8 @@
         </div>
         <div class="icons">
             <div class="icons-left">
-                <i class="bi bi-heart"></i>
+                {# 좋아요 버튼 #}
+                {% include 'picstargram/post/partials/post_likes_button.html' %}
                 <i class="bi bi-chat"></i>
                 <i class="bi bi-send"></i>
             </div>
@@ -71,21 +71,15 @@
                 <i class="bi bi-bookmark"></i>
             </div>
         </div>
-{#        {% set comments = post.comments %}#}
-{#        {% set comments_count = comments | length %}#}
-{##}
-{#        {% set replies_count = namespace(value=0) %}#}
-{#        {% for comment in comments %}#}
-{#            {% set replies_count.value = replies_count.value + comment.replies | length %}#}
-{#        {% endfor %}#}
-{##}
-{#        {% set comments_count = comments_count + replies_count.value %}#}
 
         {% set comments_count = post.comments_count %}
         {# 좋아요 / 작성자 + 컨텐츠 #}
         <div class="pt-2 text-sm">
             <div class="d-block my-1 fs-6">
-                <strong>{{ 123 }} 명</strong>이 좋아합니다.
+                <b>
+                    {# 좋아요갯수 -> oob처리 됨. 여기서만 hx-swap-oob 표기가 없다. jinja변수 id때문에 #}
+                    <span id="like-{{ post.id }}">{{ post.likes | length }}</span>
+                </b>명이 좋아합니다.
             </div>
             <div class="d-flex flex-row gap-2">
                 <strong class="d-inline">{{ post.user.username }}</strong>
@@ -98,24 +92,10 @@
                    hx-swap="innerHTML"
                    class="text-decoration-none text-muted fs-6"
                 >
-
-                        {# hx-swap-oob가 동적인 id에 달리면 작동안한다 -> 순회안에서 oob는 include안하고 직접 oob없이 id만 넣고 생성#}
-                        {#<span class="badge bg-light text-dark rounded-pill"
-                              id="commentscount_{{ post.id }}"
-                                                >
-                            {{ comments_count }}
-                        </span>#}
-
-
-                        {% include 'picstargram/post/partials/comments_count_with_post.html' %}
-
+                    {% include 'picstargram/post/partials/comments_count_with_post.html' %}
 
                 </a>
             </button>
         </div>
-
-        {# 댓글 추가 form #}
-        {#{% include 'picstargram/post/partials/comment_create_form.html' %}#}
-
     </article>
 </div>

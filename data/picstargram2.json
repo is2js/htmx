@@ -147,7 +147,7 @@
       "comment_id": 2
     }
   ],
-  "likes": [
+  "likedPosts": [
     {
       "id": 1,
       "user_id": 2,
