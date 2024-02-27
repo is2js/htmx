@@ -83,9 +83,10 @@
     ![img.png](../images/181.png)
 
 5. **`comment_reactions_count.html`로 추출한 뒤, `hx-target이 될 예정으로서 id를 추가`하고 include하고, 리액션 버튼의 hx-target과 hx-swap을 지정한다.**
+    - **이 때, hx-target이 되는 comment count자체가, `반복되는 여러개`이므로 comment_id를 끼워서 만들어야한다.**
     ```html
     {% set user_reactioned_emojis = user and comment.reactions | selectattr('user_id', 'eq', user.id) | map(attribute='emoji') | list %}
-    <div id="comment-reactions-count" class="fs-7 d-flex gap-1 align-items-center flex-wrap my-0 py-1">
+    <div id="comment-{{comment.id}}-reactions-count" class="fs-7 d-flex gap-1 align-items-center flex-wrap my-0 py-1">
         {% for reaction, count in comment.count_by_reactions %}
         <span class="rounded-pill px-2 py-1 flex-grow-0 flex-shrink-0 flex-basis-auto
                         bg-opacity-10 {% if reaction in user_reactioned_emojis %}border border-1 border-primary-subtle text-primary bg-primary{% else %}text-dark bg-dark{% endif %}
@@ -105,7 +106,7 @@
     <form hx-post="{{ url_for('pic_hx_reaction_comment', comment_id=comment.id) }}"
           hx-trigger="change"
           x-data="{recentlyEmoji: ''}"
-          hx-target="#comment-reactions-count"
+          hx-target="#comment-{{comment.id}}-reactions-count"
           hx-swap="outerHTML"
     >
     ```

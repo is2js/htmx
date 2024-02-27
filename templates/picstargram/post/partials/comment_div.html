@@ -1,5 +1,19 @@
-<div x-data="{ replyAddOpen: false }">
-    <div class="comment d-flex">
+<style>
+    {#
+    div.comment.d-flex.real::after {
+        content: "";
+        background: slategray;
+        position: absolute;
+        bottom: 43px;
+        width: 1px;
+        height: 60px;
+        left: 0.05rem;
+    }
+    #}
+
+</style>
+<div x-data="{ replyAddOpen: false }" class="position-relative">
+    <div class="comment d-flex real">
         <div class="d-inline me-2">
             <a href="{{ url_for('pic_users') }}">
                 {% set avatar_url = comment.user.profile_url if comment.user.profile_url else url_for('static', path='images/default-user.png') %}
@@ -36,7 +50,7 @@
                 <form hx-post="{{ url_for('pic_hx_reaction_comment', comment_id=comment.id) }}"
                       hx-trigger="change"
                       x-data="{recentlyEmoji: ''}"
-                      hx-target="#comment-reactions-count"
+                      hx-target="#comment-{{comment.id}}-reactions-count"
                       hx-swap="outerHTML"
                 >
                     <div class="btn-group btn-group-sm"
@@ -155,7 +169,9 @@
     </div>
 
     {# reply #}
-    <div class="mt-1 mb-2 ps-3">
+    {#<div class="mt-1 mb-2 ps-3">#}
+    <div class="mt-1 mb-2" style="padding-left:1.5rem">
+
         {# 전체 답글 #}
         {% set replies = comment.replies %}
         <div hx-trigger="repliesChanged-{{ comment.id }} from:body"

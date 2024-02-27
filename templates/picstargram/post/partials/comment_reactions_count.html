@@ -1,5 +1,5 @@
 {% set user_reactioned_emojis = user and comment.reactions | selectattr('user_id', 'eq', user.id) | map(attribute='emoji') | list %}
-<div id="comment-reactions-count" class="fs-7 d-flex gap-1 align-items-center flex-wrap my-0 py-1">
+<div id="comment-{{comment.id}}-reactions-count" class="fs-7 d-flex gap-1 align-items-center flex-wrap my-0 py-1">
     {% for reaction, count in comment.count_by_reactions %}
         <span class="rounded-pill px-2 py-1 flex-grow-0 flex-shrink-0 flex-basis-auto
                         bg-opacity-10 {% if reaction in user_reactioned_emojis %}border border-1 border-primary-subtle text-primary bg-primary{% else %}text-dark bg-dark{% endif %}
