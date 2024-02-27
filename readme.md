@@ -36,3 +36,6 @@
     ![88de53d2-6115-404b-aba0-cc17e9b673b3](https://raw.githubusercontent.com/is2js/screenshots/main/88de53d2-6115-404b-aba0-cc17e9b673b3.gif)
 6. 좋아요버튼과 좋아요갯수 변화는 `hx-swap`과 `hx-swap-oob`를 활용하여, 백엔드에서 동적view를 만들어낸다.
     ![c7592013-5846-43c8-86d8-e7fa95d617fe](https://raw.githubusercontent.com/is2js/screenshots/main/c7592013-5846-43c8-86d8-e7fa95d617fe.gif)
+
+7. 댓글은 `더 다양한 의견 제시`를 위해, 좋아요 대신 **`리액션` like slack을 구현하였다.**
+    ![e686075c-232c-4398-a7bf-d2636681710e](https://raw.githubusercontent.com/is2js/screenshots/main/e686075c-232c-4398-a7bf-d2636681710e.gif)

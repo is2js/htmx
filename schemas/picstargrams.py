@@ -1,5 +1,6 @@
 import datetime
 import json
+from collections import Counter
 from typing import Optional, List, Any, Type, Union
 
 from fastapi import Form, Depends, HTTPException, UploadFile
@@ -238,9 +239,22 @@ class CommentSchema(BaseModel):
 
     replies: Optional[List['ReplySchema']] = []
 
+    reactions: Optional[List['ReactionedCommentsSchema']] = []
+
     @property
     def replies_count(self):
         return len(self.replies)
+
+    @property
+    def count_by_reactions(self):
+        if not self.reactions:
+            return []
+
+        reaction_counts = Counter()
+        for reaction in self.reactions:
+            reaction_counts[reaction.emoji] += 1
+
+        return list(reaction_counts.items())
 
 
 class CommentCreateReq(BaseModel):
@@ -382,9 +396,9 @@ class LikedPostSchema(LikeSchema):
     post_id: int
 
 
-class LikedCommentSchema(LikeSchema):
+class ReactionedCommentsSchema(LikeSchema):
     comment_id: int
-    pass
+    emoji: str
 
 
 class LikedReplySchema(LikeSchema):

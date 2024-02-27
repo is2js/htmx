@@ -2,10 +2,10 @@
 import datetime
 
 from schemas.picstargrams import UserSchema, PostSchema, CommentSchema, LikeSchema, TagSchema, PostTagSchema, \
-    ImageInfoSchema, ReplySchema, LikedPostSchema
+    ImageInfoSchema, ReplySchema, LikedPostSchema, ReactionedCommentsSchema
 from utils.auth import hash_password
 
-users, comments, posts, tags, post_tags, liked_posts, liked_comments, liked_replies = [], [], [], [], [], [], [], []
+users, comments, posts, tags, post_tags, liked_posts, reactioned_comments, liked_replies = [], [], [], [], [], [], [], []
 # 이미지
 image_infos = []
 # 답글
@@ -341,7 +341,9 @@ def delete_post(post_id: int):
 
 
 # new) eagerload를 하더라도 순환참조에러 발생할 수 있으니, with_xxx를 붙여서 처리한다.
-def get_comment(comment_id: int, with_user: bool = False, with_replies: bool = True):
+def get_comment(comment_id: int, with_user: bool = False, with_replies: bool = True,
+                with_reactions=True
+                ):
     comment = next((comment for comment in comments if comment.id == comment_id), None)
     if not comment:
         return None
@@ -356,6 +358,12 @@ def get_comment(comment_id: int, with_user: bool = False, with_replies: bool = T
 
     if with_replies:
         comment.replies = get_replies(comment_id, with_user=True)
+
+    if with_reactions:
+        comment.reactions = [
+            get_reactioned_comment(reaction.id, with_user=True) for reaction in reactioned_comments
+            if reaction.comment_id == comment.id
+        ]
 
     return comment
 
@@ -505,6 +513,67 @@ def create_liked_post(data: dict):
 
     return liked_post_schema
 
+def get_reactioned_comment(reaction_id: int, with_user: bool = False):
+    reaction = next((reaction for reaction in reactioned_comments if reaction.id == reaction_id), None)
+    if not reaction:
+        return None
+
+    if with_user:
+        user = get_user(reaction.user_id)
+
+        if not user:
+            return None
+
+        reaction.user = user
+
+    return reaction
+
+
+def get_reactioned_comments(comment_id: int, with_user: bool = False):
+    if with_user:
+        return [
+            get_reactioned_comment(reaction.id, with_user=True) for reaction in reactioned_comments if reaction.comment_id == comment_id
+        ]
+
+    return [like for like in liked_posts if like.comment_id == comment_id]
+
+def create_reactioned_comment(data: dict):
+    user = get_user(data['user_id'])
+    if not user:
+        raise Exception(f"해당 user(id={data['user_id']})가 존재하지 않습니다.")
+    comment = get_comment(data['comment_id'])
+    if not comment:
+        raise Exception(f"해당 comment(id={data['comment_id']})가 존재하지 않습니다.")
+
+    try:
+        reactioned_comment_schema = ReactionedCommentsSchema(**data)
+        # id + created_at, ~~updated_at~~ 부여
+        reactioned_comment_schema.id = find_max_id(reactioned_comments) + 1
+        reactioned_comment_schema.created_at = datetime.datetime.now()
+        reactioned_comments.append(reactioned_comment_schema)
+
+    except Exception as e:
+        raise e
+
+    return reactioned_comment_schema
+
+
+def delete_reactioned_comment(reactioned_comment_schema: LikedPostSchema):
+    user = get_user(reactioned_comment_schema.user_id)
+    if not user:
+        raise Exception(f"해당 user(id={reactioned_comment_schema.user_id})가 존재하지 않습니다.")
+    comment = get_comment(reactioned_comment_schema.comment_id)
+    if not comment:
+        raise Exception(f"해당 comment(id={reactioned_comment_schema.comment_id})가 존재하지 않습니다.")
+
+    global reactioned_comments
+
+    reactioned_comments = [reaction for reaction in reactioned_comments if
+                   not (reaction.comment_id == reactioned_comment_schema.comment_id
+                        and reaction.user_id == reactioned_comment_schema.user_id
+                        and reaction.emoji == reactioned_comment_schema.emoji
+                        )]
+
 
 # create_or_delete의 판단상황이므로, 삭제를 like_id가 안들어온다.
 # -> 누른상태-> get으로 like객체얻은상태 -> schema 통째로 받아 post_id, user_id로 삭제처리한다.
@@ -517,14 +586,9 @@ def delete_liked_post(liked_post_schema: LikedPostSchema):
         raise Exception(f"해당 post(id={liked_post_schema.post_id})가 존재하지 않습니다.")
 
     global liked_posts
-    print(f"len(liked_posts)  >> {len(liked_posts)}")
-    print(f"[liked_posts]  >> {[(like.post_id, like.user_id) for like in liked_posts]}")
-    print(f"liked_post_schema.post_id, liked_post_schema.user_id  >> {liked_post_schema.post_id, liked_post_schema.user_id}")
 
     liked_posts = [like for like in liked_posts if
                    not (like.post_id == liked_post_schema.post_id and like.user_id == liked_post_schema.user_id)]
-    print(f"len(liked_posts)  >> {len(liked_posts)}")
-    print(f"[liked_posts]  >> {[(like.post_id, like.user_id) for like in liked_posts]}")
 
 
 # def get_tag(tag_id: int):
