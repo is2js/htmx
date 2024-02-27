@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from typing import List, Optional, Union
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query, BackgroundTasks
+from fastapi import Depends, FastAPI, Header, Request, UploadFile, Query, BackgroundTasks, Form, Body
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
@@ -30,7 +30,7 @@ from exceptions.template_exceptions import BadRequestException
 from middlewares.access_control import AccessControl
 from schemas.picstargrams import UserSchema, CommentSchema, PostSchema, LikeSchema, TagSchema, PostTagSchema, \
     UpdatePostReq, PostCreateReq, UserCreateReq, UserLoginReq, Token, UserEditReq, UploadImageReq, ImageInfoSchema, \
-    CommentCreateReq, ReplySchema, ReplyCreateReq, LikedPostSchema, LikedCommentSchema, LikedReplySchema
+    CommentCreateReq, ReplySchema, ReplyCreateReq, LikedPostSchema, ReactionedCommentsSchema, LikedReplySchema
 from schemas.tracks import Track
 from templatefilters import feed_time
 from utils import make_dir_and_file_path, get_updated_file_name_and_ext_by_uuid4, create_thumbnail
@@ -46,11 +46,11 @@ models.Base.metadata.create_all(bind=engine)
 tracks_data = []
 from crud.picstargrams import users, posts, comments, get_users, get_user, create_user, update_user, delete_user, \
     get_posts, get_post, create_post, update_post, delete_post, get_comment, get_comments, create_comment, \
-    update_comment, delete_comment, liked_posts, liked_comments, liked_replies, tags, post_tags, create_liked_post, \
+    update_comment, delete_comment, liked_posts, reactioned_comments, liked_replies, tags, post_tags, create_liked_post, \
     delete_liked_post, get_tags, get_tag, create_tag, \
     update_tag, delete_tag, get_user_by_username, get_user_by_email, \
     image_infos, create_image_info, get_comments_by_post_author, \
-    replies, create_reply, get_replies, get_reply, delete_reply
+    replies, create_reply, get_replies, get_reply, delete_reply, delete_reactioned_comment, create_reactioned_comment
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -72,7 +72,7 @@ async def lifespan(app: FastAPI):
 
     # 4) [Picstargram] dict -> pydantic schema model
     # global users, comments, posts
-    users_, comments_, posts_, tags_, post_tags_, replies_, liked_posts_, liked_comments_, liked_replies_ = await init_picstargram_json_to_list_per_pydantic_model()
+    users_, comments_, posts_, tags_, post_tags_, replies_, liked_posts_, reactioned_comments_, liked_replies_ = await init_picstargram_json_to_list_per_pydantic_model()
     users.extend(users_)
     comments.extend(comments_)
     posts.extend(posts_)
@@ -80,7 +80,7 @@ async def lifespan(app: FastAPI):
     post_tags.extend(post_tags_)
     replies.extend(replies_)
     liked_posts.extend(liked_posts_)
-    liked_comments.extend(liked_comments_)
+    reactioned_comments.extend(reactioned_comments_)
     liked_replies.extend(liked_replies_)
 
     yield
@@ -145,13 +145,13 @@ async def init_picstargram_json_to_list_per_pydantic_model():
         replies = [ReplySchema(**reply) for reply in picstargram.get("replies", [])]
 
         liked_posts = [LikedPostSchema(**like) for like in picstargram.get("likedPosts", [])]
-        liked_comments = [LikedCommentSchema(**like) for like in picstargram.get("likedComments", [])]
+        reactioned_comments = [ReactionedCommentsSchema(**like) for like in picstargram.get("reactionedComments", [])]
         liked_replies = [LikedReplySchema(**like) for like in picstargram.get("likedReplies", [])]
 
     print(
-        f"[Picstargram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개, likes-Post{len(liked_posts)} / Comment{len(liked_comments)}/ Reply{len(liked_replies)}개"
+        f"[Picstargram] users-{len(users)}개, comments-{len(comments)}개, posts-{len(posts)}개, tags-{len(tags)}개, post_tags-{len(post_tags)}개, likes-Post{len(liked_posts)} / Comment{len(reactioned_comments)}/ Reply{len(liked_replies)}개"
         f"의 json 데이터, 각 list에 load")
-    return users, comments, posts, tags, post_tags, replies, liked_posts, liked_comments, liked_replies
+    return users, comments, posts, tags, post_tags, replies, liked_posts, reactioned_comments, liked_replies
 
 
 async def init_emp_dept_dict_to_db(db):
@@ -1106,7 +1106,6 @@ async def pic_hx_like_post(
                       )
 
 
-
 ############
 # picstargram tags
 ############
@@ -1796,6 +1795,53 @@ async def pic_hx_delete_comment(
                   },
                   messages=[Message.DELETE.write("댓글", level=MessageLevel.INFO)],
                   )
+
+
+@app.post("/comments/{comment_id}/reaction")
+@login_required
+async def pic_hx_reaction_comment(
+        request: Request,
+        comment_id: int,
+        emoji: str = Form(alias='emoji'),
+):
+
+    comment = get_comment(comment_id, with_user=True, with_reactions=True)
+    reactions = comment.reactions
+    user_id = request.state.user.id
+
+    # 1) post처럼 좋아요 자신 금지는 없다.
+
+    # 2) 현재 comment의 reactions 중에 내가 [해당emoji]에 대해 && [좋아요] 누른 적이 있는지 검사한다.
+    # => post의 like에 비해 필터링 조건이 [emojin일치]가 추가된다.
+    user_exists_reaction = next(
+        (reaction for reaction in reactions if reaction.user_id == user_id and reaction.emoji == emoji)
+        , None)
+
+    # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
+    #      => 삭제시, user_id, post_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
+    if user_exists_reaction:
+        delete_reactioned_comment(user_exists_reaction)
+
+        comment = get_comment(comment_id, with_reactions=True)
+        return render(request, 'picstargram/post/partials/comment_reactions_count.html',
+                      context=dict(comment=comment),
+                      messages=Message.DELETE.write('reaction', text=f"Delete to Reaction {emoji}",
+                                                    level=MessageLevel.WARNING),
+                      )
+
+    # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
+    else:
+        # 2-2-1) 좋아요 안누른상태 &  uncehck상태가 아닐 때만 생성
+        data = dict(user_id=user_id, comment_id=comment_id, emoji=emoji)
+        reaction = create_reactioned_comment(data)
+
+        comment = get_comment(comment_id, with_reactions=True)
+        return render(request, 'picstargram/post/partials/comment_reactions_count.html',
+                      context=dict(comment=comment),
+                      messages=Message.SUCCESS.write('reaction', text=f"Thanks to Reaction {emoji}",
+                                                     level=MessageLevel.SUCCESS),
+                      )
+
 
 
 ############

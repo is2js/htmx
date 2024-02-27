@@ -9,24 +9,109 @@
             </a>
         </div>
         <div class="d-flex flex-column w-100">
-            <div class="d-flex justify-content-between">
-                <div>
+            <div class="d-flex justify-content-between ">
+                <div class="w-auto me-1">
                     <div class="name">{{ comment.user.username }}</div>
                     <div class="comment">{{ comment.content }}</div>
                 </div>
-                <div class="pt-2 fs-7">
-                    <a href="#" class="text-decoration-none text-muted"
-                       style="cursor: pointer;"
-                    >
-                        <i class="bi bi-heart"></i>
-                    </a>
-                </div>
+                {#                <div class="fs-7 d-flex gap-1 align-items-center flex-wrap">#}
+                {#                    <a href="#" class="text-decoration-none text-muted"#}
+                {#                       style="cursor: pointer;"#}
+                {#                    >#}
+                {#                        <i class="bi bi-heart"></i>#}
+                {#                    </a>#}
+                {# #}
+
             </div>
-            <div class="d-flex gap-2 fs-7">
+            <div class="d-flex gap-2 fs-7 align-items-center">
                 <div class="text-muted">
                     {{ comment.created_at | feed_time }}
                 </div>
-                <span href="#" class="text-muted">좋아요 {{ 123 }}개</span>
+                {#<span href="#" class="text-muted">
+                    좋아요 {{ 123 }}개
+                </span>#}
+
+                <!-- 이모지 버튼 -->
+                {% set user_reactioned_emojis = user and comment.reactions | selectattr('user_id', 'eq', user.id) | map(attribute='emoji') | list %}
+                <form hx-post="{{ url_for('pic_hx_reaction_comment', comment_id=comment.id) }}"
+                      hx-trigger="change"
+                      x-data="{recentlyEmoji: ''}"
+                      hx-target="#comment-reactions-count"
+                      hx-swap="outerHTML"
+                >
+                    <div class="btn-group btn-group-sm"
+                         role="group"
+                         aria-label="comment reaction toggle button group"
+                    >
+                        <input type="hidden" name="emoji" x-bind:value="recentlyEmoji">
+
+                        <input type="checkbox"
+                               class="btn-check"
+                                {#name="emoji"#}
+                               id="comment-{{ comment.id }}-reaction-1"
+                               value="👏"
+                               autocomplete="off"
+
+                               @change="recentlyEmoji = $event.target.value"
+
+                               {% if '👏' in user_reactioned_emojis %}checked{% endif %}
+                        />
+                        <label class="btn btn-outline-secondary btn-reaction"
+                               for="comment-{{ comment.id }}-reaction-1"
+                        >👏
+                        </label>
+
+                        {#@change="recentlyUncheckedEmoji = $event.target.checked ? '' : $event.target.value;"#}
+                        <input type="checkbox"
+                               class="btn-check"
+                                {#name="emoji"#}
+                               id="comment-{{ comment.id }}-reaction-2"
+                               value="😍"
+                               autocomplete="off"
+
+                               @change="recentlyEmoji = $event.target.value"
+
+                               {% if '😍' in user_reactioned_emojis %}checked{% endif %}
+                        />
+                        <label class="btn btn-outline-secondary btn-reaction"
+                               for="comment-{{ comment.id }}-reaction-2"
+                        >😍
+                        </label>
+
+                        <input type="checkbox"
+                               class="btn-check"
+                                {#name="emoji"#}
+                               id="comment-{{ comment.id }}-reaction-3"
+                               value="🤔"
+                               autocomplete="off"
+
+                               @change="recentlyEmoji = $event.target.value"
+
+                               {% if '🤔' in user_reactioned_emojis %}checked{% endif %}
+                        />
+                        <label class="btn btn-outline-secondary btn-reaction"
+                               for="comment-{{ comment.id }}-reaction-3"
+                        >🤔
+                        </label>
+
+                        <input type="checkbox"
+                               class="btn-check"
+                                {#name="emoji"#}
+                               id="comment-{{ comment.id }}-reaction-4"
+                               value="😂"
+                               autocomplete="off"
+
+                               @change="recentlyEmoji = $event.target.value"
+
+                               {% if '😂' in user_reactioned_emojis %}checked{% endif %}
+                        />
+                        <label class="btn btn-outline-secondary btn-reaction"
+                               for="comment-{{ comment.id }}-reaction-4"
+                        >😂
+                        </label>
+                    </div>
+                </form>
+
                 {# 답글창 열기 #}
                 <a class="text-decoration-none text-muted"
                    @click="replyAddOpen = !replyAddOpen; $nextTick(() => $refs.replyAddFormWrapper.querySelector('input').focus());"
@@ -49,7 +134,7 @@
                     </div>
                     <!-- replyAddOpen이 false일 때 -->
                     <template x-if="!replyAddOpen">
-                        <span class="text-dark">답글 달기</span>
+                        <span class="text-dark cursor-pointer">답글 달기</span>
                     </template>
                 </a>
 
@@ -57,12 +142,15 @@
                     <a hx-post="{{ url_for('pic_hx_delete_comment', comment_id= comment.id ) }}"
                        hx-confirm="정말 삭제하시겠습니까?"
                        hx-swap="none"
-                       style="cursor: pointer;"
+                       class="text-decoration-none text-muted cursor-pointer"
                     >
                         <i class="bi bi-trash3-fill"></i>
                     </a>
                 {% endif %}
             </div>
+
+            {# reaction(emoji) count  view #}
+            {% include 'picstargram/post/partials/comment_reactions_count.html' %}
         </div>
     </div>
 
