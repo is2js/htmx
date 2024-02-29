@@ -278,6 +278,9 @@ class ReplySchema(BaseModel):
 
     user: Optional['UserSchema'] = None
 
+    likes: Optional[List['LikedReplySchema']] = []
+
+
 
 class ReplyCreateReq(BaseModel):
     content: str

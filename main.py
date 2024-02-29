@@ -50,7 +50,8 @@ from crud.picstargrams import users, posts, comments, get_users, get_user, creat
     delete_liked_post, get_tags, get_tag, create_tag, \
     update_tag, delete_tag, get_user_by_username, get_user_by_email, \
     image_infos, create_image_info, get_comments_by_post_author, \
-    replies, create_reply, get_replies, get_reply, delete_reply, delete_reactioned_comment, create_reactioned_comment
+    replies, create_reply, get_replies, get_reply, delete_reply, delete_reactioned_comment, create_reactioned_comment, \
+    delete_liked_reply, create_liked_reply
 
 UPLOAD_DIR = pathlib.Path() / 'uploads'
 
@@ -1106,6 +1107,52 @@ async def pic_hx_like_post(
                       )
 
 
+@app.post("/replies/{reply_id}/like")
+@login_required
+async def pic_hx_like_reply(
+        request: Request,
+        reply_id: int
+):
+    reply = get_reply(reply_id, with_user=True, with_likes=True)
+    likes = reply.likes
+    user_id = request.state.user.id
+
+    # 1) 글작성자 <-> 좋아요누른 유저면, 안된다고 메세지를 준다.
+    if reply.user.id == user_id:
+        raise BadRequestException(
+            '작성자는 좋아요를 누를 수 없어요🤣',
+            context=dict(reply=reply),
+            template_name="picstargram/post/partials/reply_likes_button_and_count.html"
+        )
+
+    # 2) 현재 post의 likes 중에 내가 좋아요 누른 적이 있는지 검사한다.
+    user_exists_like = next((like for like in likes if like.user_id == user_id), None)
+
+    # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
+    #      => 삭제시, user_id, reply_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
+    if user_exists_like:
+        delete_liked_reply(user_exists_like)
+        reply = get_reply(reply_id, with_likes=True)
+        return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
+                      context=dict(reply=reply),
+                      messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
+                      )
+
+    # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
+    else:
+        data = dict(user_id=user_id, reply_id=reply_id)
+        like = create_liked_reply(data)
+        print(f"like  >> {like}")
+
+
+        reply = get_reply(reply_id, with_likes=True)
+        print(f"liked_replies[-1]  >> {liked_replies[-1]}")
+        return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
+                      context=dict(reply=reply),
+                      messages=Message.SUCCESS.write('좋아요', text="❤좋아요를 눌렀습니다.❤", level=MessageLevel.SUCCESS),
+                      )
+
+
 ############
 # picstargram tags
 ############
@@ -1676,6 +1723,8 @@ async def pic_hx_show_post_details(
         post_id: int,
 ):
     post = get_post(post_id, with_user=True)
+    if not post:
+        raise BadRequestException(f'해당 글은 존재하지 않습니다.')
 
     comments = get_comments(post_id, with_user=True)
 
@@ -1804,7 +1853,6 @@ async def pic_hx_reaction_comment(
         comment_id: int,
         emoji: str = Form(alias='emoji'),
 ):
-
     comment = get_comment(comment_id, with_user=True, with_reactions=True)
     reactions = comment.reactions
     user_id = request.state.user.id
@@ -1841,7 +1889,6 @@ async def pic_hx_reaction_comment(
                       messages=Message.SUCCESS.write('reaction', text=f"Thanks to Reaction {emoji}",
                                                      level=MessageLevel.SUCCESS),
                       )
-
 
 
 ############

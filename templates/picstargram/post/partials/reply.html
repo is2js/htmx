@@ -1,10 +1,9 @@
-
 {# 답글 내용 #}
 <div class="reply-wrapper">
     <div class="d-flex justify-content-between align-items-end py-1 w-100 mb-1">
         {# 답글 정보 = 사진/ 닉넴|body #}
         {#<div class="d-flex fs-7 reply-{{ loop.index + 1 }}">#}
-        <div class="reply-profile d-flex fs-7" style="--reply_index:{{ loop_index * 0.7  }}">
+        <div class="reply-profile d-flex fs-7" style="--reply_index:{{ loop_index * 0.7 }}">
             {# 사진 #}
             {% set avatar_url = reply.user.profile_url if reply.user.profile_url else url_for('static', path='images/default-user.png') %}
             <a href="#">
@@ -27,28 +26,15 @@
 
         {# 답글 좋아요/삭제 #}
         <div class="d-flex align-items-center gap-2 fs-7">
-            {# 좋아요 = 아이콘 + 좋아요갯수 / 좋아요버튼 #}
-            <div class="d-flex align-items-center gap-1">
-                <a href="#" class="text-decoration-none text-muted"
-                   style="cursor: pointer;"
-                >
-                    <i class="bi bi-heart"></i>
-                </a>
-                <span>4</span>
-            </div>
-            <a href="#" class="text-decoration-none text-nowrap text-muted"
-               style="cursor: pointer;"
-            >
-                좋아요
-            </a>
+
+            {% include "picstargram/post/partials/reply_likes_button_and_count.html" %}
 
             {# 삭제 #}
             {% if user and reply.user_id == user.id %}
-                <a class="text-decoration-none text-muted"
+                <a class="text-decoration-none text-muted cursor-pointer"
                    hx-post="{{ url_for('pic_hx_delete_reply', reply_id= reply.id ) }}"
                    hx-confirm="정말 삭제하시겠습니까?"
                    hx-swap="none"
-                   style="cursor: pointer;"
                 >
                     <i class="bi bi-trash3-fill"></i>
                 </a>

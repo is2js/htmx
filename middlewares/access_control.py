@@ -42,6 +42,7 @@ class AccessControl(BaseHTTPMiddleware):
             # 템플릿 오류 -> oob render(status code 200<= <400 + 204제외만 oob swap)
             if isinstance(e, TemplateException):
                 return render(request,
+                              hx_trigger=e.hx_trigger,
                               template_name=e.template_name,
                               html=e.html,
                               context=e.context,

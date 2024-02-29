@@ -1,4 +1,5 @@
-{% set user_exists_like = user and user.id in post.likes | map(attribute='user_id') | list %}
+{#{% set user_exists_like = user and user.id in post.likes | map(attribute='user_id') | list %}#}
+{% set user_exists_like = user and post.likes | selectattr('user_id', 'eq', user.id) | list | count > 0 %}
 <a hx-post="{{ url_for('pic_hx_like_post', post_id= post.id ) }}"
    hx-trigger="click"
    hx-target="this"

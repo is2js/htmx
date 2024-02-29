@@ -1,0 +1,18 @@
+{# 좋아요 = 아이콘 + 좋아요갯수 / 좋아요버튼 #}
+{% set user_exists_reply_like = user and reply.likes | selectattr('user_id', 'eq', user.id) | list | count %}
+<div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-1 cursor-pointer">
+        <a href="#" class="text-decoration-none text-muted">
+            <i class="bi bi-heart{% if user_exists_reply_like %}-fill text-danger{% endif %}"></i>
+        </a>
+        <span>{{ reply.likes | length }}</span>
+    </div>
+    <a hx-post="{{ url_for('pic_hx_like_reply', reply_id= reply.id ) }}"
+       hx-trigger="click"
+       hx-target="closest div"
+       hx-swap="outerHTML"
+       class="text-decoration-none text-nowrap text-muted cursor-pointer"
+    >
+        좋아요 {% if user_exists_reply_like %}취소 {% endif %}
+    </a>
+</div>
