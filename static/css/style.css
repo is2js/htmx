@@ -369,8 +369,7 @@ body {
 /* 1) .btn-group > input:checked + label 는 .btn-group하위 input[type="radio"].btn-check input의 label에 생기는 아웃라인 제거 */
 /* 2) .btn-check:focus+.btn,  .btn-check:focus+label는 btn-group하위 input[type="checkbox"].btn-check로 바꿨을 때, input focus를 풀때 생기는 잔상 같은 아웃라인 제거 */
 .btn-group > input:checked + label,
-.btn-check:focus+.btn, .btn-check:focus+label
-{
+.btn-check:focus + .btn, .btn-check:focus + label {
     outline: none !important;
     box-shadow: none !important;
     border: 0;
@@ -386,6 +385,40 @@ body {
 
     padding: 0.2em 0.3em !important;
     margin: 0.05em !important;
+}
+
+/* reply여백 & 가로세로선 */
+
+.reply-wrapper {
+    padding-left: 1.5rem;
+
+    position: relative;
+}
+
+
+.reply-profile::after {
+    position: absolute;
+    content: '';
+
+    height: 1px;
+    background: #b3b3b7;
+
+    top: calc(25px / 2 + .25rem); /*프로필사진 세로 1/2 + 프로필사진의 위쪽패딩 */
+    left: calc(1.5rem / 2); /*왼쪽들여쓰기의 절반*/
+    width: calc(1.5rem / 2 - 3px); /*왼쪽들여쓰기의 절반만큼 남았는데, 1px 빼서 프로필사진과 띄워주기*/
+}
+
+.reply-profile::before {
+    position: absolute;
+    content: '';
+
+    width: 1px;
+    background: #b3b3b7;
+
+    left: calc(1.5rem / 2); /* 왼쪽들여쓰기의 절반*/
+
+    height: calc(35% * var(--reply_index)); /*{# 프로필사진 세로 1/2 + 프로필사진의 위쪽패딩  + -100%로 내려온만큼 뒤집기#}*/
+    top: calc(calc(-35% * var(--reply_index)) + calc(25px / 2 + .25rem)); /*{#프로필사진 세로 1/2 + 프로필사진의 위쪽패딩  + -100%로 내려온만큼 뒤집기#}*/
 }
 
 

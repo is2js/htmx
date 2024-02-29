@@ -170,8 +170,8 @@
 
     {# reply #}
     {#<div class="mt-1 mb-2 ps-3">#}
-    <div class="mt-1 mb-2" style="padding-left:1.5rem">
 
+    <div class="mt-1 mb-2">
         {# 전체 답글 #}
         {% set replies = comment.replies %}
         <div hx-trigger="repliesChanged-{{ comment.id }} from:body"
