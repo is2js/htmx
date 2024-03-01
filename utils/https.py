@@ -54,9 +54,6 @@ def render(request, template_name="", html="", context: dict = {}, status_code: 
     #         oob_html_str += ('\n' if oob_html_str else '') + render_oob(t_name, **t_context)
     if oobs:
         for t_name in oobs:
-                print(f"ctx  >> {ctx}")
-
-
                 oob_html_str += ('\n' if oob_html_str else '') + render_oob(t_name, **ctx)
 
     # oob까지 없어야 실제 204 No Content -> swap 발생 안됨.

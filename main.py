@@ -5,6 +5,7 @@ import pathlib
 import urllib
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from functools import wraps
 from typing import List, Optional, Union
 from uuid import uuid4
 
@@ -1062,95 +1063,224 @@ async def pic_create_or_delete_like(
         return f"좋아요를 누른 것에 실패했습니다.: {e}"
 
 
-@app.post("/posts/{post_id}/like")
-@login_required
-async def pic_hx_like_post(
-        request: Request,
-        post_id: int
-):
-    post = get_post(post_id, with_user=True, with_likes=True)
-    likes = post.likes
-    user_id = request.state.user.id
+# @app.post("/posts/{post_id}/like")
+# @login_required
+# async def pic_hx_like_post(
+#         request: Request,
+#         post_id: int
+# ):
+#     post = get_post(post_id, with_user=True, with_likes=True)
+#     likes = post.likes
+#     user_id = request.state.user.id
+#
+#     # 1) 글작성자 <-> 좋아요누른 유저면, 안된다고 메세지를 준다.
+#     if post.user.id == user_id:
+#         raise BadRequestException(
+#             '작성자는 좋아요를 누를 수 없어요🤣',
+#             context=dict(post=post),
+#             template_name="picstargram/post/partials/post_likes_button.html"
+#             # html=f"{len(post.likes)}"
+#         )
+#
+#     # 2) 현재 post의 likes 중에 내가 좋아요 누른 적이 있는지 검사한다.
+#     user_exists_like = next((like for like in likes if like.user_id == user_id), None)
+#
+#     # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
+#     #      => 삭제시, user_id, post_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
+#     if user_exists_like:
+#         delete_liked_post(user_exists_like)
+#         post = get_post(post_id, with_likes=True)
+#         return render(request, "picstargram/post/partials/post_likes_button.html",
+#                       context=dict(post=post),
+#                       messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
+#                       oobs=["picstargram/post/partials/post_likes_count.html"]
+#                       )
+#
+#     # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
+#     else:
+#         data = dict(user_id=user_id, post_id=post_id)
+#         like = create_liked_post(data)
+#         post = get_post(post_id, with_likes=True)
+#         return render(request, "picstargram/post/partials/post_likes_button.html",
+#                       context=dict(post=post),
+#                       messages=Message.SUCCESS.write('좋아요', text="❤좋아요를 눌렀습니다.❤", level=MessageLevel.SUCCESS),
+#                       oobs=["picstargram/post/partials/post_likes_count.html"]
+#                       )
 
-    # 1) 글작성자 <-> 좋아요누른 유저면, 안된다고 메세지를 준다.
-    if post.user.id == user_id:
-        raise BadRequestException(
-            '작성자는 좋아요를 누를 수 없어요🤣',
-            context=dict(post=post),
-            template_name="picstargram/post/partials/post_likes_button.html"
-            # html=f"{len(post.likes)}"
-        )
 
-    # 2) 현재 post의 likes 중에 내가 좋아요 누른 적이 있는지 검사한다.
-    user_exists_like = next((like for like in likes if like.user_id == user_id), None)
+# @app.post("/replies/{reply_id}/like")
+# @login_required
+# async def pic_hx_like_reply(
+#         request: Request,
+#         reply_id: int
+# ):
+#     reply = get_reply(reply_id, with_user=True, with_likes=True)
+#     likes = reply.likes
+#     user_id = request.state.user.id
+#
+#     # 1) 글작성자 <-> 좋아요누른 유저면, 안된다고 메세지를 준다.
+#     if reply.user.id == user_id:
+#         raise BadRequestException(
+#             '작성자는 좋아요를 누를 수 없어요🤣',
+#             context=dict(reply=reply),
+#             template_name="picstargram/post/partials/reply_likes_button_and_count.html"
+#         )
+#
+#     # 2) 현재 post의 likes 중에 내가 좋아요 누른 적이 있는지 검사한다.
+#     user_exists_like = next((like for like in likes if like.user_id == user_id), None)
+#
+#     # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
+#     #      => 삭제시, user_id, reply_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
+#     if user_exists_like:
+#         delete_liked_reply(user_exists_like)
+#         reply = get_reply(reply_id, with_likes=True)
+#         return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
+#                       context=dict(reply=reply),
+#                       messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
+#                       )
+#
+#     # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
+#     else:
+#         data = dict(user_id=user_id, reply_id=reply_id)
+#         like = create_liked_reply(data)
+#
+#         reply = get_reply(reply_id, with_likes=True)
+#         return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
+#                       context=dict(reply=reply),
+#                       messages=Message.SUCCESS.write('좋아요', text="❤좋아요를 눌렀습니다.❤", level=MessageLevel.SUCCESS),
+#                       )
 
-    # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
-    #      => 삭제시, user_id, post_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
-    if user_exists_like:
-        delete_liked_post(user_exists_like)
-        post = get_post(post_id, with_likes=True)
-        return render(request, "picstargram/post/partials/post_likes_button.html",
-                      context=dict(post=post),
-                      messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
-                      oobs=["picstargram/post/partials/post_likes_count.html"]
-                      )
 
-    # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
-    else:
-        data = dict(user_id=user_id, post_id=post_id)
-        like = create_liked_post(data)
-        post = get_post(post_id, with_likes=True)
-        return render(request, "picstargram/post/partials/post_likes_button.html",
-                      context=dict(post=post),
-                      messages=Message.SUCCESS.write('좋아요', text="❤좋아요를 눌렀습니다.❤", level=MessageLevel.SUCCESS),
-                      oobs=["picstargram/post/partials/post_likes_count.html"]
-                      )
+def like_toggle(entity):
+    def inner_func(func):
+        @wraps(func)
+        async def wrapper(request, *args, **kwargs):
+            # path로 오는 인자값은 kwargs에서 꺼내면 된다.
+            id_ = kwargs.get(f'{entity}_id')
+            # kwargs >> {'reply_id': 1}
+
+            # TODO: 실제 모델이라면, model.get(id=) 통합메서드
+            if entity == 'post':
+                getter = get_post
+                creater = create_liked_post
+                deleter = delete_liked_post
+                schema = getter(id_, with_user=True, with_likes=True)
+                template_name = "picstargram/post/partials/post_likes_button.html"
+            elif entity == 'reply':
+                getter = get_reply
+                creater = create_liked_reply
+                deleter = delete_liked_reply
+                schema = getter(id_, with_user=True, with_likes=True)
+                template_name = "picstargram/post/partials/reply_likes_button_and_count.html"
+            else:
+                ...
+
+            schema = getter(id_, with_user=True, with_likes=True)
+            likes = schema.likes
+            user_id = request.state.user.id
+
+            if schema.user.id == user_id:
+                raise BadRequestException(
+                    '작성자는 좋아요를 누를 수 없어요🤣',
+                    context={f"{entity}": schema},
+                    template_name=template_name
+                )
+
+            user_exists_like = next((like for like in likes if like.user_id == user_id), None)
+            is_liked = False
+            if user_exists_like:
+                deleter(user_exists_like)
+                # schema = getter(id_, with_likes=True)
+                # return render(request, template_name=template_name,
+                #               context={f"{entity}": schema},
+                #               messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
+                #               )
+
+            # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
+            else:
+                is_liked = True
+                data = {'user_id': user_id, f"{entity}_id": id_}
+                like = creater(data)
+
+                # schema = getter(id_, with_likes=True)
+                # return render(request, template_name=template_name,
+                #               context={f"{entity}": schema},
+                #               messages=Message.SUCCESS.write('좋아요', text="❤좋아요를 눌렀습니다.❤", level=MessageLevel.SUCCESS),
+                #               )
+
+            # request.state에 is_liked 값을 추가
+            request.state.is_liked = is_liked
+
+            return await func(request, id_)
+
+        return wrapper
+
+    return inner_func
 
 
 @app.post("/replies/{reply_id}/like")
 @login_required
+@like_toggle('reply')
 async def pic_hx_like_reply(
         request: Request,
-        reply_id: int
+        reply_id: int,
 ):
-    reply = get_reply(reply_id, with_user=True, with_likes=True)
-    likes = reply.likes
-    user_id = request.state.user.id
+    # reply = get_reply(reply_id, with_user=True, with_likes=True)
+    # likes = reply.likes
+    # user_id = request.state.user.id
+    #
+    # # 1) 글작성자 <-> 좋아요누른 유저면, 안된다고 메세지를 준다.
+    # if reply.user.id == user_id:
+    #     raise BadRequestException(
+    #         '작성자는 좋아요를 누를 수 없어요🤣',
+    #         context=dict(reply=reply),
+    #         template_name="picstargram/post/partials/reply_likes_button_and_count.html"
+    #     )
+    #
+    # # 2) 현재 post의 likes 중에 내가 좋아요 누른 적이 있는지 검사한다.
+    # user_exists_like = next((like for like in likes if like.user_id == user_id), None)
+    #
+    # # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
+    # #      => 삭제시, user_id, reply_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
+    # if user_exists_like:
+    #     delete_liked_reply(user_exists_like)
+    #     reply = get_reply(reply_id, with_likes=True)
+    #     return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
+    #                   context=dict(reply=reply),
+    #                   messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
+    #                   )
+    #
+    # # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
+    # else:
+    #     data = dict(user_id=user_id, reply_id=reply_id)
+    #     like = create_liked_reply(data)
+    #
+    message_text = "❤좋아요를 눌렀습니다.❤" if request.state.is_liked else "💔좋아요를 취소했습니다.💔"
+    message_level = MessageLevel.SUCCESS if request.state.is_liked else MessageLevel.WARNING
 
-    # 1) 글작성자 <-> 좋아요누른 유저면, 안된다고 메세지를 준다.
-    if reply.user.id == user_id:
-        raise BadRequestException(
-            '작성자는 좋아요를 누를 수 없어요🤣',
-            context=dict(reply=reply),
-            template_name="picstargram/post/partials/reply_likes_button_and_count.html"
-        )
-
-    # 2) 현재 post의 likes 중에 내가 좋아요 누른 적이 있는지 검사한다.
-    user_exists_like = next((like for like in likes if like.user_id == user_id), None)
-
-    # 2-1) 좋아요를 누른 상태면, 좋아요를 삭제하여 취소시킨다.
-    #      => 삭제시, user_id, reply_id가 필요한데, [누른 좋아요를 찾은상태]로서, 삭제시만 id가 아닌 schema객체를 통째로 넘겨 처리한다.
-    if user_exists_like:
-        delete_liked_reply(user_exists_like)
-        reply = get_reply(reply_id, with_likes=True)
-        return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
-                      context=dict(reply=reply),
-                      messages=Message.DELETE.write('좋아요', text="💔좋아요를 취소했습니다.💔", level=MessageLevel.WARNING),
-                      )
-
-    # 2-2) 좋아요를 안누른상태면, 좋아요를 생성한다.
-    else:
-        data = dict(user_id=user_id, reply_id=reply_id)
-        like = create_liked_reply(data)
-        print(f"like  >> {like}")
+    reply = get_reply(reply_id, with_likes=True)
+    return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
+                  context=dict(reply=reply),
+                  messages=Message.SUCCESS.write('좋아요', text=message_text, level=message_level),
+                  )
 
 
-        reply = get_reply(reply_id, with_likes=True)
-        print(f"liked_replies[-1]  >> {liked_replies[-1]}")
-        return render(request, "picstargram/post/partials/reply_likes_button_and_count.html",
-                      context=dict(reply=reply),
-                      messages=Message.SUCCESS.write('좋아요', text="❤좋아요를 눌렀습니다.❤", level=MessageLevel.SUCCESS),
-                      )
+@app.post("/posts/{post_id}/like")
+@login_required
+@like_toggle('post')
+async def pic_hx_like_post(
+        request: Request,
+        post_id: int,
+):
+    message_text = "❤좋아요를 눌렀습니다.❤" if request.state.is_liked else "💔좋아요를 취소했습니다.💔"
+    message_level = MessageLevel.SUCCESS if request.state.is_liked else MessageLevel.WARNING
+
+    post = get_post(post_id, with_likes=True)
+    return render(request, "picstargram/post/partials/post_likes_button.html",
+                  context=dict(post=post),
+                  messages=Message.SUCCESS.write('좋아요', text=message_text, level=message_level),
+                  oobs=["picstargram/post/partials/post_likes_count.html"]
+                  )
 
 
 ############
