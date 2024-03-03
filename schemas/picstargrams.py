@@ -256,6 +256,13 @@ class CommentSchema(BaseModel):
 
         return list(reaction_counts.items())
 
+    @property
+    def reactions_count(self):
+        if not self.reactions:
+            return 0
+
+        return len(self.reactions)
+
 
 class CommentCreateReq(BaseModel):
     content: str
@@ -279,7 +286,6 @@ class ReplySchema(BaseModel):
     user: Optional['UserSchema'] = None
 
     likes: Optional[List['LikedReplySchema']] = []
-
 
 
 class ReplyCreateReq(BaseModel):

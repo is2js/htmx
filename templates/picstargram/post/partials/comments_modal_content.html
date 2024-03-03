@@ -35,12 +35,29 @@
                 {% include 'picstargram/post/partials/comment_create_form.html' %}
             </div>
 
-
             {# 전체 댓글 #}
-            <div class="comments ps-1"
-                 hx-trigger="commentsChanged from:body"
-                 hx-get="{{ url_for('pic_hx_show_comments', post_id=post.id) }}"
-                 hx-target="this"
+            {# 1) 탭 #}
+            <div id="tabs" class="d-flex gap-2 ms-2 mb-2 {% if post.comments | length == 0 %}visually-hidden{% endif %}"
+                 _="on htmx:afterOnLoad take .selected for event.target"
+            >
+                <a class="tab selected"
+                   hx-get="{{ url_for('pic_hx_show_comments', post_id=post.id) }}"
+                   hx-target="#tab-contents"
+                   hx-swap="innerHTML"
+                >최근 순</a>
+                <a class="tab"
+                   hx-get="{{ url_for('pic_hx_show_comments', post_id=post.id).include_query_params(sort='like') }}"
+                   hx-target="#tab-contents"
+                   hx-swap="innerHTML"
+                >좋아요 순</a>
+            </div>
+
+            {# 2) 탭 컨텐츠#}
+             {#hx-trigger="commentsChanged-{{ post.id }} from:body"#}
+             {#hx-get="{{ url_for('pic_hx_show_comments', post_id=post.id) }}"#}
+             {#hx-target="innerHTML"#}
+            <div id="tab-contents"
+                 class="comments ps-1"
             >
                 {% include 'picstargram/post/partials/comments.html' %}
             </div>

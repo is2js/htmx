@@ -34,7 +34,8 @@
                 <a class="text-decoration-none text-muted cursor-pointer"
                    hx-post="{{ url_for('pic_hx_delete_reply', reply_id= reply.id ) }}"
                    hx-confirm="정말 삭제하시겠습니까?"
-                   hx-swap="none"
+                   hx-target="closest div.reply-wrapper"
+                   hx-swap="outerHTML"
                 >
                     <i class="bi bi-trash3-fill"></i>
                 </a>

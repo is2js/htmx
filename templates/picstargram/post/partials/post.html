@@ -92,8 +92,15 @@
                    hx-swap="innerHTML"
                    class="text-decoration-none text-muted fs-6"
                 >
-                    {% include 'picstargram/post/partials/comments_count_with_post.html' %}
-
+                    {#{% include 'picstargram/post/partials/comments_count_with_post.html' %}#}
+                    <span id="commentsCountChanged-{{ post.id }}"
+                    > 댓글
+                        {% if comments_count > 0 %}
+                            보기 <span class="badge bg-light text-dark rounded-pill">{{ comments_count }}</span>
+                        {% else %}
+                            달기
+                        {% endif %}
+                    </span>
                 </a>
             </button>
         </div>

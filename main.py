@@ -1886,18 +1886,17 @@ async def pic_new_comment(
 
         data['post_id'] = post_id
         data['user_id'] = request.state.user.id
-        # post_id = get_post(data['post_id'])
 
         comment = create_comment(data)
-
 
     except Exception as e:
         raise BadRequestException(f'Comment 생성에 실패함.: {str(e)}')
 
-    return render(request, "",
-                  hx_trigger={
-                      'noContent': False, 'commentsChanged': True, f'commentsCountChanged-{post_id}': True,
-                  },
+    comment = get_comment(comment.id, with_user=True, with_replies=True)
+    post = get_post(data['post_id'], with_comments=True)
+    return render(request, "picstargram/post/partials/comment_div_new.html",
+                  context=dict(comment=comment, post=post),
+                  oobs=["picstargram/post/partials/comments_count_with_post.html"],
                   messages=[Message.CREATE.write("댓글", level=MessageLevel.INFO)],
                   )
 
@@ -1907,9 +1906,18 @@ async def pic_hx_show_comments(
         request: Request,
         post_id: int,
         hx_request: Optional[str] = Header(None),
+        sort: str = Query(None, alias='sort'),
 ):
+    # print(f"sort  >> {sort}")
+    # sort  >> like
+
     comments = get_comments(post_id, with_user=True)
-    comments = list(reversed(comments))
+
+    # comments = list(reversed(comments))
+    if sort and sort == 'like':
+        comments = sorted(comments, key=lambda x: (x.reactions_count, x.created_at), reverse=True)
+    else:
+        comments = list(reversed(comments))
 
     context = {
         'request': request,
@@ -1967,11 +1975,17 @@ async def pic_hx_delete_comment(
         raise BadRequestException(f'Comment(id={comment_id})삭제에 실패했습니다.')
 
     # post삭제와 달리, modal에서 CRUD이므로, noContent가 발생하니, noContent=False로 modal안닫히게?
+
+    post = get_post(post_id, with_comments=True)
     return render(request,
                   "",
                   hx_trigger={
-                      'noContent': False, 'commentsChanged': True, f'commentsCountChanged-{post_id}': True,
+                      'noContent': False,
+                  #     'commentsChanged': True,
+                  #     f'commentsCountChanged-{post_id}': True,
                   },
+                  context=dict(post=post),
+                  oobs=["picstargram/post/partials/comments_count_with_post.html"],
                   messages=[Message.DELETE.write("댓글", level=MessageLevel.INFO)],
                   )
 
@@ -2042,19 +2056,25 @@ async def pic_new_reply(
         reply = create_reply(data)
 
         # 2) comment갯수변화 trigger를 위해 post_id가 필요
-        comment = get_comment(comment_id)
+        comment = get_comment(comment_id, with_replies=True)
         post_id = comment.post_id
 
     except Exception as e:
         raise BadRequestException(f'Reply 생성에 실패함.: {str(e)}')
 
-    return render(request, "",
-                  hx_trigger={
-                      'noContent': False,
-                      f'repliesChanged-{comment_id}': True,
-                      f'repliesCountChanged-{comment_id}': True,
-                      f'commentsCountChanged-{post_id}': True,  # 답글달시 댓글갯수변화도
-                  },
+    # return render(request, "",
+    reply = get_reply(reply.id)
+    loop_index = len(comment.replies)
+    post = get_post(post_id, with_comments=True)
+    return render(request, "picstargram/post/partials/reply_new.html",
+                  context=dict(reply=reply, loop_index=loop_index, post=post),
+                  # hx_trigger={
+                  # 'noContent': False,
+                  # f'repliesChanged-{comment_id}': True,
+                  # f'repliesCountChanged-{comment_id}': True,
+                  # f'commentsCountChanged-{post_id}': True,  # 답글달시 댓글갯수변화도
+                  # },
+                  oobs=["picstargram/post/partials/comments_count_with_post.html"],
                   messages=[Message.CREATE.write("답글", level=MessageLevel.INFO)],
                   )
 
@@ -2093,11 +2113,16 @@ async def pic_hx_delete_reply(
     except Exception as e:
         raise BadRequestException(f'Reply (id={reply_id})삭제에 실패했습니다.')
 
+    comment = get_comment(comment_id, with_replies=True)
+    post = get_post(comment.post_id, with_comments=True)
     return render(request,
                   "",
                   hx_trigger={
-                      'noContent': False, f'repliesChanged-{comment_id}': True,
-                      f'repliesCountChanged-{comment_id}': True,
+                      'noContent': False,
+                      #     f'repliesChanged-{comment_id}': True,
+                      #     f'repliesCountChanged-{comment_id}': True,
                   },
+                  context=dict(post=post),
+                  oobs=["picstargram/post/partials/comments_count_with_post.html"],
                   messages=[Message.DELETE.write("답글", level=MessageLevel.INFO)],
                   )

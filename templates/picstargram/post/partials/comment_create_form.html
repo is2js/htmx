@@ -2,7 +2,8 @@
     <form hx-post="{{ url_for('pic_new_comment', post_id=post.id) }}"
           _="on htmx:afterRequest reset() me"
           hx-trigger="submit, keyup[enterkey]"
-          hx-swap="none"
+          hx-target="#tab-contents"
+          hx-swap="afterbegin"
           autocomplete="off"
     >
         <input type="text"

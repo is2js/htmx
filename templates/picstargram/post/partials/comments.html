@@ -1,7 +1,9 @@
-{% if comments | list | length > 0 %}
-    {% for comment in comments %}
-        {% include 'picstargram/post/partials/comment_div.html' %}
-    {% endfor %}
-{% else %}
-    <p>댓글이 아직 없습니다</p>
-{% endif %}
+<fade-in style="opacity: 0;"
+         _ = "on load transition my opacity to 1 over 0.2 seconds"
+>
+    {% if comments | list | length > 0 %}
+        {% for comment in comments %}
+            {% include 'picstargram/post/partials/comment_div.html' %}
+        {% endfor %}
+    {% endif %}
+</fade-in>
