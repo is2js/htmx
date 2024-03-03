@@ -2,7 +2,8 @@
     <form hx-post="{{ url_for('pic_new_reply', comment_id=comment.id) }}"
           _="on htmx:afterRequest reset() me"
           hx-trigger="submit, keyup[enterkey]"
-          hx-swap="none"
+          hx-swap="beforeend"
+          hx-target="#comment-{{ comment.id }}-replies"
           autocomplete="off"
     >
         <input type="text"

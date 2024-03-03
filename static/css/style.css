@@ -421,6 +421,31 @@ body {
     top: calc(calc(-35% * var(--reply_index)) + calc(25px / 2 + .25rem)); /*{#프로필사진 세로 1/2 + 프로필사진의 위쪽패딩  + -100%로 내려온만큼 뒤집기#}*/
 }
 
+/* 댓글 tab */
+.tab {
+    padding: 0.25rem .50rem;
+    border-radius: 0.75rem;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    cursor: pointer;
+
+    font-size: 0.75rem;
+    text-decoration: none;
+    background-color: rgb(0, 0, 0, 0.05);
+    color: rgb(0, 0, 0, 0.6);
+}
+
+.tab:hover {
+    background-color: rgb(0, 0, 0, 0.1);
+}
+
+.tab.selected {
+    color: white;
+    background-color: black;
+}
 
 /* tailwind css */
 .rotate-90 {
@@ -438,4 +463,3 @@ body {
 .cursor-pointer {
     cursor: pointer;
 }
-

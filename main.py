@@ -1886,18 +1886,17 @@ async def pic_new_comment(
 
         data['post_id'] = post_id
         data['user_id'] = request.state.user.id
-        # post_id = get_post(data['post_id'])
 
         comment = create_comment(data)
-
 
     except Exception as e:
         raise BadRequestException(f'Comment 생성에 실패함.: {str(e)}')
 
-    return render(request, "",
-                  hx_trigger={
-                      'noContent': False, 'commentsChanged': True, f'commentsCountChanged-{post_id}': True,
-                  },
+    comment = get_comment(comment.id, with_user=True, with_replies=True)
+    post = get_post(data['post_id'], with_comments=True)
+    return render(request, "picstargram/post/partials/comment_div_new.html",
+                  context=dict(comment=comment, post=post),
+                  oobs=["picstargram/post/partials/comments_count_with_post.html"],
                   messages=[Message.CREATE.write("댓글", level=MessageLevel.INFO)],
                   )
 
@@ -2042,19 +2041,25 @@ async def pic_new_reply(
         reply = create_reply(data)
 
         # 2) comment갯수변화 trigger를 위해 post_id가 필요
-        comment = get_comment(comment_id)
+        comment = get_comment(comment_id, with_replies=True)
         post_id = comment.post_id
 
     except Exception as e:
         raise BadRequestException(f'Reply 생성에 실패함.: {str(e)}')
 
-    return render(request, "",
-                  hx_trigger={
-                      'noContent': False,
-                      f'repliesChanged-{comment_id}': True,
-                      f'repliesCountChanged-{comment_id}': True,
-                      f'commentsCountChanged-{post_id}': True,  # 답글달시 댓글갯수변화도
-                  },
+    # return render(request, "",
+    reply = get_reply(reply.id)
+    loop_index = len(comment.replies)
+    post = get_post(post_id, with_comments=True)
+    return render(request, "picstargram/post/partials/reply_new.html",
+                  context=dict(reply=reply, loop_index=loop_index, post=post),
+                  # hx_trigger={
+                      # 'noContent': False,
+                      # f'repliesChanged-{comment_id}': True,
+                      # f'repliesCountChanged-{comment_id}': True,
+                      # f'commentsCountChanged-{post_id}': True,  # 답글달시 댓글갯수변화도
+                  # },
+                  oobs=["picstargram/post/partials/comments_count_with_post.html"],
                   messages=[Message.CREATE.write("답글", level=MessageLevel.INFO)],
                   )
 
